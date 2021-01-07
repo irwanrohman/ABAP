@@ -1,0 +1,260 @@
+*&---------------------------------------------------------------------*
+*& Report ZFIRP_PPHRP
+*&WITHOLDING TAX REPORT DESIGNED BY ADI ESGI // EXECUTED BY IRWAN *
+*&25/11/2020
+*&---------------------------------------------------------------------*
+REPORT zfirp_pphrp.
+TABLES : bseg, skat, acdoca.
+
+
+
+TYPES : BEGIN OF ty_report,
+        bukrs   TYPE bseg-bukrs,
+        werks   TYPE acdoca-werks,
+        gjahr   TYPE bseg-gjahr,
+        belnr   TYPE bseg-belnr,
+        h_budat TYPE bseg-h_budat,
+        hkont   TYPE bseg-hkont,
+        txt20   TYPE skat-txt20,
+        pswbt   TYPE bseg-pswbt,
+        pswsl   TYPE bseg-pswsl,
+        END OF ty_report,
+
+
+        BEGIN OF ty_data,
+        buzei   TYPE bseg-buzei,
+        ktosl   TYPE bseg-ktosl,
+        belnr   TYPE bseg-belnr,
+        h_budat TYPE bseg-h_budat,
+        hkont   TYPE bseg-hkont,
+        pswbt   TYPE bseg-pswbt,
+        pswsl   TYPE bseg-pswsl,
+        bukrs   TYPE bseg-bukrs,
+        gjahr   TYPE bseg-gjahr,
+        saknr   TYPE skat-saknr,
+        txt20   TYPE skat-txt20,
+        awref   TYPE acdoca-awref,
+        rldnr   TYPE acdoca-rldnr,
+        docln   TYPE acdoca-docln,
+        werks   TYPE rseg-werks,
+        ktsol   TYPE acdoca-ktosl,
+        blart   TYPE acdoca-blart,
+        END OF ty_data.
+
+ DATA : it_report   TYPE TABLE OF ty_report WITH HEADER LINE,
+        wa_report   TYPE ty_report,
+        it_data     TYPE TABLE OF ty_data WITH HEADER LINE,
+        it_datapr   TYPE TABLE OF ty_data WITH HEADER LINE,
+*               STANDARD LAYOUT OF SAP
+        gw_layout       TYPE slis_layout_alv,
+        gt_cat          TYPE slis_t_fieldcat_alv,
+        gw_cat          TYPE slis_fieldcat_alv,
+        gt_event        TYPE slis_t_event,
+        gw_event        TYPE slis_alv_event,
+        gt_sort         TYPE slis_t_sortinfo_alv,
+        gw_sort         TYPE slis_sortinfo_alv.
+
+
+SELECTION-SCREEN BEGIN OF BLOCK a WITH FRAME TITLE TEXT-001.
+  SELECT-OPTIONS :
+   s_bukrs  FOR bseg-bukrs NO INTERVALS NO-EXTENSION OBLIGATORY,
+   s_werks  FOR bseg-werks,
+   s_belnr  FOR bseg-belnr,
+   S_BUDAT  FOR BSEG-H_BUDAT,
+   s_gjahr  FOR bseg-gjahr NO INTERVALS NO-EXTENSION OBLIGATORY.
+SELECTION-SCREEN END OF BLOCK a.
+
+START-OF-SELECTION.
+
+PERFORM f_get_data.
+PERFORM display_data.
+
+
+FORM f_get_data.
+
+ SELECT b~buzei b~ktosl b~belnr b~h_budat b~hkont b~pswbt b~pswsl b~bukrs b~gjahr
+        a~awref a~ktosl a~rldnr a~blart "a~rldnr a~DOCLN
+        r~werks
+ INTO CORRESPONDING FIELDS OF TABLE it_data
+   FROM bseg AS b
+
+   INNER JOIN acdoca AS a ON b~belnr EQ a~belnr AND a~rbukrs EQ b~bukrs
+   AND a~gjahr EQ b~gjahr
+   INNER JOIN rseg AS r ON r~belnr EQ a~awref
+   WHERE
+   B~H_BUDAT IN S_BUDAT AND
+   b~ktosl EQ 'WIT' AND
+   b~bukrs IN s_bukrs AND
+   r~werks IN s_werks AND
+   b~belnr IN s_belnr AND
+   b~gjahr IN s_gjahr AND
+   a~ktosl  eq 'WIT' AND
+   a~rldnr eq '0L' and
+   a~blart eq 'RE' and
+   a~xreversed EQ ' ' AND
+   a~xreversing EQ ' '.
+
+   SORT it_data BY belnr buzei ktosl rldnr blart.
+   DELETE ADJACENT DUPLICATES FROM it_data COMPARING ALL FIELDS.
+
+
+   " 211220 - Get Data From PR Updated by PB-FT req by Adi.
+
+   SELECT b~buzei b~ktosl b~belnr b~h_budat b~hkont b~pswbt b~pswsl b~bukrs b~gjahr
+        a~awref a~ktosl a~rldnr a~blart "a~rldnr a~DOCLN
+        h~werks
+   INTO CORRESPONDING FIELDS OF TABLE it_datapr
+   FROM bseg AS b
+
+   INNER JOIN acdoca AS a ON b~belnr EQ a~belnr AND a~rbukrs EQ b~bukrs
+   AND a~gjahr EQ b~gjahr
+   inner join ZFITB_PYMTREQ_H as h on a~awref = h~belnr
+   WHERE
+   B~H_BUDAT IN S_BUDAT AND
+   b~ktosl EQ 'WIT' AND
+   b~bukrs IN s_bukrs AND
+   h~werks IN s_werks AND
+   b~belnr IN s_belnr AND
+   b~gjahr IN s_gjahr AND
+   a~ktosl  eq 'WIT' AND
+   a~rldnr eq '0L' and
+   a~blart eq 'KR' and
+   a~xreversed EQ ' ' AND
+   a~xreversing EQ ' '.
+
+   SORT it_dataPR BY belnr buzei ktosl rldnr blart.
+   DELETE ADJACENT DUPLICATES FROM it_datapr COMPARING
+   BUZEI KTOSL BELNR H_BUDAT HKONT PSWBT PSWSL BUKRS GJAHR SAKNR TXT20 AWREF RLDNR DOCLN KTOSL BLART.
+
+   " End of updating.
+
+
+   insert LINES OF it_datapr into it_data index 1.
+
+LOOP AT it_data.
+  SELECT SINGLE txt20 FROM skat INTO it_data-txt20
+    WHERE saknr EQ it_data-hkont AND spras EQ 'i' AND ktopl = 'PBRX'.
+  MODIFY it_data.
+ ENDLOOP.
+
+
+LOOP AT it_data.
+
+ wa_report-bukrs    = it_data-bukrs.
+ wa_report-werks    = it_data-werks.
+ wa_report-gjahr    = it_data-gjahr.
+ wa_report-belnr    = it_data-belnr.
+ wa_report-h_budat  = it_data-h_budat.
+ wa_report-hkont    = it_data-hkont.
+ wa_report-txt20    = it_data-txt20.
+ wa_report-pswsl    = it_data-pswsl.
+ IF it_data-pswsl EQ 'IDR'.
+ wa_report-pswbt    = it_data-pswbt * 100.
+ ELSE.
+ wa_report-pswbt    = it_data-pswbt.
+ ENDIF.
+
+
+APPEND wa_report TO it_report.
+  CLEAR wa_report.
+ENDLOOP.
+
+
+  ENDFORM.
+
+
+
+  FORM display_data.
+    DATA : it_event_exit TYPE slis_t_event_exit,
+           wa_event_exit TYPE slis_event_exit.
+  PERFORM fill_fieldcat.
+  gw_layout-zebra = 'X'.
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program = sy-repid
+*      i_callback_top_of_page  = 'TOP_OF_PAGE'
+*      i_callback_pf_status_set = 'PF'
+      it_event_exit      = it_event_exit
+      is_layout          = gw_layout
+      it_fieldcat        = gt_cat
+      i_default          = ''
+      i_save             = 'X'
+    TABLES
+      t_outtab           = it_report.
+
+  IF sy-subrc <> 0.
+  ENDIF.
+
+  ENDFORM.
+
+  FORM fill_fieldcat.
+
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'BUKRS'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 7.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Co.Code'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'WERKS'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Plant'.
+  APPEND gw_cat TO gt_cat.
+
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'GJAHR'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Fiscal Years'.
+  APPEND gw_cat TO gt_cat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'BELNR'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Doc.Numb'.
+ APPEND gw_cat TO gt_cat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'H_BUDAT'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Posting Date'.
+ APPEND gw_cat TO gt_cat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'HKONT'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 12.
+  gw_cat-seltext_l = 'GL Acc.'.
+  APPEND gw_cat TO gt_cat.
+
+
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'TXT20'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 30.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Desc.'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'PSWBT'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Amount'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'PSWSL'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 5.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Curr.'.
+  APPEND gw_cat TO gt_cat.
+
+ENDFORM.
