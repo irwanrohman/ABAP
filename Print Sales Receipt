@@ -1,0 +1,497 @@
+*&---------------------------------------------------------------------*
+*& Report ZSDFR_KWITANSI
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zsdfr_kwitansi.
+
+TYPES:
+      ty_outputparams TYPE sfpoutputparams, "Form Parameters for Form Processing
+      ty_docparams    TYPE sfpdocparams.    "Form Processing Output Parameter
+DATA:
+      wa_outputparams TYPE sfpoutputparams,
+      wa_docparams    TYPE sfpdocparams,
+      gv_fm_name      TYPE rs38l_fnam.
+
+DATA : it_kwitansi TYPE zsdtt_kwitansi,
+       remark      TYPE char50,
+       remark2     TYPE char40.
+
+TABLES : vbrk, vbrp, kna1.
+
+
+TYPES : BEGIN OF ty_report,
+        check     TYPE char1,
+        no        LIKE sy-tabix,
+        inv       TYPE vbrk-zzpro_in_no,
+        fkdat     TYPE vbrk-fkdat,
+        waerk     TYPE vbrk-waerk,
+        netwr     TYPE vbrk-netwr,
+        name1     TYPE char50,
+        END OF ty_report,
+
+
+        BEGIN OF ty_data,
+        vbeln       TYPE vbrk-vbeln,
+        fkart       TYPE vbrk-fkart,
+        fkdat       TYPE vbrk-fkdat,
+        waerk       TYPE vbrk-waerk,
+        vkorg       TYPE vbrk-vkorg,
+        netwr       TYPE vbrk-netwr,
+        kunrg       TYPE vbrk-kunrg,
+        mwsbk       TYPE vbrk-mwsbk,
+        fksto       TYPE vbrk-fksto,
+        zzpro_in_no TYPE vbrk-zzpro_in_no,
+        vkbur       TYPE vbrp-vkbur,
+        name1       TYPE kna1-name1,
+        amount      TYPE p DECIMALS 2,
+
+        END OF ty_data.
+
+DATA : it_report    TYPE TABLE OF ty_report WITH HEADER LINE,
+       wa_report    TYPE ty_report,
+       it_report2   TYPE TABLE OF ty_report WITH HEADER LINE,
+       wa_report2   TYPE ty_report,
+       wa_kwitansi  TYPE zsdst_kwitansi,
+
+       it_data      TYPE TABLE OF ty_data WITH HEADER LINE,
+       it_data2     TYPE TABLE OF ty_data with HEADER LINE,
+"================================== ALV
+        gw_layout       TYPE slis_layout_alv,
+        gt_cat          TYPE slis_t_fieldcat_alv,
+        gw_cat          TYPE slis_fieldcat_alv,
+        gt_event        TYPE slis_t_event,
+        gw_event        TYPE slis_alv_event,
+        gt_sort         TYPE slis_t_sortinfo_alv,
+        gw_sort         TYPE slis_sortinfo_alv,
+        g_repid         TYPE sy-repid.
+
+SELECTION-SCREEN BEGIN OF BLOCK a WITH FRAME TITLE TEXT-001.
+    SELECT-OPTIONS  :  s_vkbur  FOR vbrp-vkbur NO-EXTENSION NO INTERVALS OBLIGATORY,
+                       s_kunrg  FOR vbrk-kunrg,
+                       s_fkdat  FOR vbrk-fkdat,
+                       s_inv    FOR vbrk-zzpro_in_no.
+
+SELECTION-SCREEN END OF BLOCK a.
+
+
+SELECTION-SCREEN BEGIN OF BLOCK b WITH FRAME TITLE TEXT-002.
+  PARAMETERS : p_no   LIKE remark,
+               p_for  LIKE remark2.
+
+SELECTION-SCREEN END OF BLOCK b.
+
+START-OF-SELECTION.
+
+PERFORM get_data.
+PERFORM proses_data.
+PERFORM display_data.
+
+FORM get_data.
+
+  SELECT k~vbeln k~fkart k~fkdat k~waerk k~vkorg k~netwr k~kunrg k~mwsbk k~fksto k~zzpro_in_no
+         p~vkbur
+         n~name1
+  INTO CORRESPONDING FIELDS OF TABLE it_data
+  FROM vbrk AS k
+  INNER JOIN vbrp AS p ON k~vbeln = p~vbeln
+  INNER JOIN kna1 AS n ON n~kunnr = k~kunrg
+  WHERE
+  p~vkbur IN s_vkbur AND
+  k~kunrg IN s_kunrg AND
+  k~fkdat IN s_fkdat AND
+  k~zzpro_in_no IN s_inv AND
+  k~fksto EQ ' ' AND
+  k~fkart NE 'B090'.
+
+SORT it_data BY vbeln.
+DELETE ADJACENT DUPLICATES FROM it_data COMPARING ALL FIELDS.
+
+LOOP AT it_data.
+  IF it_data-waerk = 'IDR'.
+  it_data-amount = ( it_data-netwr + it_data-mwsbk ) * 100.
+  ELSE.
+  it_data-amount =  it_data-netwr + it_data-mwsbk .
+  ENDIF.
+  MODIFY it_data.
+ENDLOOP.
+
+  ENDFORM.
+
+
+
+  FORM proses_data.
+
+  loop at it_data.
+    it_data2-fkart        = it_data-fkart.
+    it_data2-fkdat        = it_data-fkdat.
+    it_data2-waerk        = it_data-waerk.
+    it_data2-vkorg        = it_data-vkorg.
+*    it_data2-netwr         = it_data-netwr.
+    it_data2-kunrg        = it_data-kunrg.
+*    it_data2-mwsbk         = it_data-mwsbk.
+    it_data2-zzpro_in_no  = it_data-zzpro_in_no.
+    it_data2-amount       = it_data-amount.
+    it_data2-name1        = it_data-name1.
+
+    collect it_data2.
+    endloop.
+
+
+  LOOP AT it_data2.
+    wa_report-inv     = it_data2-zzpro_in_no.
+    wa_report-fkdat   = it_data2-fkdat.
+    wa_report-waerk   = it_data2-waerk.
+    wa_report-netwr   = it_data2-amount.
+    wa_report-name1   = it_data2-name1.
+
+   APPEND wa_report TO it_report.
+   CLEAR wa_report.
+   ENDLOOP.
+
+   SORT it_report ASCENDING BY name1.
+
+   LOOP AT it_report INTO wa_report.
+     wa_report-no = sy-tabix.
+   MODIFY it_report FROM wa_report.
+   ENDLOOP.
+
+
+  ENDFORM.
+
+
+FORM display_data. "USING ucomm TYPE sy-ucomm.
+DATA : it_event_exit TYPE slis_t_event_exit,
+       wa_event_exit TYPE slis_event_exit.
+
+PERFORM fill_fieldcat.
+  gw_layout-zebra = 'X'.
+  gw_layout-info_fieldname = 'LINE_COLOR'.
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program      = sy-repid
+*      I_CALLBACK_TOP_OF_PAGE  = 'TOP_OF_PAGE'
+*     I_GRID_TITLE            = 'IRWAN'
+*      I_CALLBACK_USER_COMMAND = 'HANDLE_USER_COMMAND'
+      i_callback_user_command  = 'USER_COMMAND'
+      i_callback_pf_status_set = 'PF'
+      it_event_exit            = it_event_exit
+      is_layout               = gw_layout
+      it_fieldcat             = gt_cat
+      i_default               = ''
+      i_save                  = 'X'
+    TABLES
+      t_outtab                = it_report
+    EXCEPTIONS
+      program_error           = 1
+      OTHERS                  = 2.
+  IF sy-subrc <> 0.
+  ENDIF.
+
+
+ENDFORM.
+*
+*
+*
+FORM print_data.
+
+  DATA : header TYPE char100,
+         addr1  TYPE char100,
+         addr2  TYPE char100,
+         npwp   TYPE char100,
+         date   LIKE vbrk-fkdat,
+         name   TYPE char50,
+         ttl    TYPE vbrk-netwr,
+         ttl2   TYPE string,
+         spell  TYPE spell,
+         langu  TYPE lang,
+         spell2 TYPE char100,
+         mod    TYPE integer,
+         waerk  TYPE waerk,
+         int    TYPE string,
+         dec    TYPE string, "vbrk-netwr,
+         dec2    type c LENGTH 5,
+         w_len TYPE i. " to declare length
+
+        date = sy-datum.
+
+    LOOP AT it_kwitansi INTO wa_kwitansi.
+        ttl = wa_kwitansi-netwr + ttl.
+
+   IF wa_kwitansi-waerk EQ 'USD'.
+        langu = 'EN'.
+   ELSEIF wa_kwitansi-waerk EQ 'IDR'.
+        langu = 'i'.
+   ENDIF.
+    ENDLOOP.
+
+  READ TABLE it_kwitansi INTO wa_kwitansi INDEX 1.
+  IF sy-subrc EQ 0.
+     waerk = wa_kwitansi-waerk.
+    IF wa_kwitansi-waerk EQ 'IDR'.
+      ttl = ttl * 100.
+      ttl2 = ttl.
+      w_len = strlen( ttl2 ).
+      w_len = w_len - 3.
+      ttl2 = ttl2+0(w_len).
+    ELSEIF wa_kwitansi-waerk EQ 'USD'.
+      ttl = ttl.
+      ttl2 = ttl.
+    ENDIF.
+  ENDIF.
+
+   SHIFT ttl2 LEFT DELETING LEADING space.
+
+    CALL FUNCTION 'SPELL_AMOUNT'
+     EXPORTING
+       amount          = ttl2
+       currency        = wa_kwitansi-waerk
+       filler          = space
+       language        = langu
+     IMPORTING
+       in_words        = spell
+     EXCEPTIONS
+       not_found       = 1
+       too_large       = 2
+       OTHERS          = 3
+              .
+    IF sy-subrc <> 0.
+* Implement suitable error handling here
+    ENDIF.
+
+   split ttl2 at '.' into int dec.
+   concatenate dec '1' into dec2.
+
+  IF dec2 EQ '00 1'.
+  LOOP AT it_kwitansi INTO wa_kwitansi.
+   IF wa_kwitansi-waerk EQ 'USD'.
+     CONCATENATE spell-word  'DOLLAR' INTO spell2 SEPARATED BY space.
+   ELSEIF wa_kwitansi-waerk EQ 'IDR'.
+    CONCATENATE spell-word 'RUPIAH' INTO spell2 SEPARATED BY space.
+   ENDIF.
+  ENDLOOP.
+
+  ELSE.
+   LOOP AT it_kwitansi INTO wa_kwitansi.
+   IF wa_kwitansi-waerk EQ 'USD'.
+     CONCATENATE spell-word 'POINT' spell-decword 'DOLLAR' INTO spell2 SEPARATED BY space. "'POINT' spell-decword
+   ELSEIF wa_kwitansi-waerk EQ 'IDR'.
+    CONCATENATE spell-word 'RUPIAH' INTO spell2 SEPARATED BY space.
+   ENDIF.
+  ENDLOOP.
+  ENDIF.
+
+  name = it_report2-name1.
+
+
+
+  IF s_vkbur-low EQ 'AG01'.
+    addr1 = 'Desa Blumbang RT 04 RW 01, Kecamatan Klego'.
+    addr2 = 'Kabupaten Boyolali - Jawa Tengah'.
+    npwp  = 'NPWP : 02.765.821.0-527.000 - Phone (0276) 6323627'.
+  ELSEIF s_vkbur-low EQ 'AG02'.
+    addr1 = 'Dukuh Jambon RT 19 RW 05, Desa Babadan, Kecamatan Sambi'.
+    addr2 = 'Kabupaten Boyolali - Jawa Tengah '.
+    npwp  = 'NPWP : 02.765.821.0-527.001 - Phone (0276) 320020 Fax (0276) 320030'.
+  ENDIF.
+
+  wa_outputparams-device    =  'PRINTER'.
+  wa_outputparams-dest      =  'LP01'.
+  wa_outputparams-nodialog  = 'X'.
+  wa_outputparams-preview   = 'X'.
+
+
+  CALL FUNCTION 'FP_JOB_OPEN'
+    CHANGING
+      ie_outputparams = wa_outputparams
+    EXCEPTIONS
+      cancel          = 1
+      usage_error     = 2
+      system_error    = 3
+      internal_error  = 4
+      OTHERS          = 5.
+  IF sy-subrc <> 0.
+    " <error handling>
+  ENDIF.
+  " Get the name of the generated function module
+  CALL FUNCTION 'FP_FUNCTION_MODULE_NAME'
+    EXPORTING
+      i_name     = 'ZSDFR_RECEIPT'
+    IMPORTING
+      e_funcname = gv_fm_name.
+  IF sy-subrc <> 0.
+    "<error handling>
+  ENDIF.
+
+  wa_docparams-langu   = 'E'.
+  wa_docparams-country = 'SG'.
+
+  CALL FUNCTION gv_fm_name
+    EXPORTING
+      /1bcdwb/docparams = wa_docparams
+      gv_header         = 'PT. ECO SMART GARMENT INDONESIA'
+      gv_addr1          = addr1
+      gv_addr2          = addr2
+      gv_npwp           = npwp
+      gv_name           = name
+      gv_no             = p_no
+      it_kwitansi       = it_kwitansi
+      gv_waerk          = waerk
+      gv_ttl            = ttl
+      gv_spell          = spell2
+      gv_date           = date "it_data-fkdat
+      gv_vkorg         = 'AG00'
+    EXCEPTIONS
+      usage_error    = 1
+      system_error   = 2
+      internal_error = 3.
+
+  " Close the spool job
+  CALL FUNCTION 'FP_JOB_CLOSE'
+    EXCEPTIONS
+      usage_error    = 1
+      system_error   = 2
+      internal_error = 3
+      OTHERS         = 4.
+  IF sy-subrc <> 0.
+    " <error handling>
+  ENDIF.
+
+ENDFORM.
+
+
+FORM fill_fieldcat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'CHECK'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-checkbox = 'X'.
+  gw_cat-edit = 'X'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Print'.
+  APPEND gw_cat TO gt_cat.
+
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'NO'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 5.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'NO'.
+  APPEND gw_cat TO gt_cat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'INV'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Invoice'.
+  APPEND gw_cat TO gt_cat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'FKDAT'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Tgl. Inv'.
+ APPEND gw_cat TO gt_cat.
+
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'WAERK'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = 'Currency'.
+  APPEND gw_cat TO gt_cat.
+
+
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'NETWR'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Amount'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'NAME1'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 40.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Customer'.
+  APPEND gw_cat TO gt_cat.
+
+
+  ENDFORM.
+
+
+FORM pf USING rt_extab TYPE slis_t_extab.
+  SET PF-STATUS 'ZSDFR_KWITANSI'.
+
+ENDFORM.
+
+
+FORM user_command USING ucomm TYPE sy-ucomm
+      selfield TYPE slis_selfield.
+
+DATA ref1 TYPE REF TO cl_gui_alv_grid.
+
+ CASE ucomm.
+  WHEN '&EXE'.
+
+
+    CALL FUNCTION 'GET_GLOBALS_FROM_SLVC_FULLSCR'
+    IMPORTING
+     e_grid = ref1.
+     CALL METHOD ref1->check_changed_data.
+    it_report-check = 'X'.
+    LOOP AT it_report.
+
+     IF it_report-check EQ 'X'.
+       MOVE-CORRESPONDING it_report TO it_report2.
+       APPEND it_report2.
+     ENDIF.
+      ENDLOOP.
+
+      LOOP AT it_report2.
+        CLEAR it_report2-no.
+        it_report2-no = sy-tabix.
+
+        wa_kwitansi-paidfr   = p_for.
+        wa_kwitansi-seqno    = it_report2-no.
+        wa_kwitansi-inv      = it_report2-inv.
+        wa_kwitansi-date     = it_report2-fkdat.
+        wa_kwitansi-waerk    = it_report2-waerk.
+
+        IF wa_kwitansi-waerk EQ 'IDR'.
+        wa_kwitansi-netwr    = it_report2-netwr / 100.
+        ELSE.
+        wa_kwitansi-netwr    = it_report2-netwr.
+        ENDIF.
+
+        APPEND wa_kwitansi TO it_kwitansi.
+        MODIFY it_report2.
+      ENDLOOP.
+
+       IF it_report2-check IS INITIAL.
+         MESSAGE s000(zmm) WITH 'Please select at least one invoice number'.
+
+       ELSE.
+       PERFORM print_data.
+       ENDIF.
+    WHEN '&REF'.
+
+      LOOP AT it_report.
+        it_report-check =' '.
+      MODIFY it_report.
+      selfield-refresh = 'X'.
+      ENDLOOP.
+
+      REFRESH it_report2.
+      REFRESH it_kwitansi.
+
+      LOOP AT it_report2 INTO wa_report2.
+        wa_report2-check =' '.
+      MODIFY it_report2 FROM wa_report2.
+      selfield-refresh = 'X'.
+      ENDLOOP.
+
+ ENDCASE.
+
+ENDFORM.
