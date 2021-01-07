@@ -1,0 +1,3550 @@
+*&---------------------------------------------------------------------*
+*& Report ZMMRP_RKK
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zmmrp_rkk.
+TABLES: zmmtb_kk_kp,zmmtb_ks_hdr,matdoc,lfa1.
+TYPE-POOLS : slis.
+
+TYPES : BEGIN OF ty_kk, " MAIN DISPLAY
+          zkp      TYPE zmmtb_kk_kp-zkp,
+          zname1v  TYPE lfa1-name1,
+          zkk      TYPE c LENGTH 25,
+          zks      TYPE zmmtb_ks_hdr-zks,
+          zkkbc    TYPE zmmtb_ks_hdr-zkkbc,
+          zkkpo    TYPE zmmtb_kk_hdr-zkkpo,
+          zstyle   TYPE zmmtb_kk_kp-zstyle,
+          zqty     TYPE P , "round value Updated by PB-FT06 req Mbk Rya 021020 ( zmmtb_kk_kp-zqty to P)
+          qtysj    TYPE p DECIMALS 2,
+          qtygr    TYPE p DECIMALS 2,
+          bal      TYPE p ,
+          week1sj  TYPE p DECIMALS 2,
+          week1gr  TYPE p DECIMALS 2,
+          week2sj  TYPE p DECIMALS 2,
+          week2gr  TYPE p DECIMALS 2,
+          week3sj  TYPE p DECIMALS 2,
+          week3gr  TYPE p DECIMALS 2,
+          week4sj  TYPE p DECIMALS 2,
+          week4gr  TYPE p DECIMALS 2,
+          week5sj  TYPE p DECIMALS 2,
+          week5gr  TYPE p DECIMALS 2,
+          week6sj  TYPE p DECIMALS 2,
+          week6gr  TYPE p DECIMALS 2,
+          week7sj  TYPE p DECIMALS 2,
+          week7gr  TYPE p DECIMALS 2,
+          week8sj  TYPE p DECIMALS 2,
+          week8gr  TYPE p DECIMALS 2,
+          week9sj  TYPE p DECIMALS 2,
+          week9gr  TYPE p DECIMALS 2,
+          week10sj TYPE p DECIMALS 2,
+          week10gr TYPE p DECIMALS 2,
+          week11sj TYPE p DECIMALS 2,
+          week11gr TYPE p DECIMALS 2,
+          week12sj TYPE p DECIMALS 2,
+          week12gr TYPE p DECIMALS 2,
+          week13sj TYPE p DECIMALS 2,
+          week13gr TYPE p DECIMALS 2,
+          week14sj TYPE p DECIMALS 2,
+          week14gr TYPE p DECIMALS 2,
+          week15sj TYPE p DECIMALS 2,
+          week15gr TYPE p DECIMALS 2,
+          week16sj TYPE p DECIMALS 2,
+          week16gr TYPE p DECIMALS 2,
+          week17sj TYPE p DECIMALS 2,
+          week17gr TYPE p DECIMALS 2,
+          week18sj TYPE p DECIMALS 2,
+          week18gr TYPE p DECIMALS 2,
+          week19sj TYPE p DECIMALS 2,
+          week19gr TYPE p DECIMALS 2,
+          week20sj TYPE p DECIMALS 2,
+          week20gr TYPE p DECIMALS 2,
+          week21sj TYPE p DECIMALS 2,
+          week21gr TYPE p DECIMALS 2,
+          week22sj TYPE p DECIMALS 2,
+          week22gr TYPE p DECIMALS 2,
+          week23sj TYPE p DECIMALS 2,
+          week23gr TYPE p DECIMALS 2,
+          week24sj TYPE p DECIMALS 2,
+          week24gr TYPE p DECIMALS 2,
+          week25sj TYPE p DECIMALS 2,
+          week25gr TYPE p DECIMALS 2,
+          week26sj TYPE p DECIMALS 2,
+          week26gr TYPE p DECIMALS 2,
+          week27sj TYPE p DECIMALS 2,
+          week27gr TYPE p DECIMALS 2,
+          week28sj TYPE p DECIMALS 2,
+          week28gr TYPE p DECIMALS 2,
+          week29sj TYPE p DECIMALS 2,
+          week29gr TYPE p DECIMALS 2,
+          week30sj TYPE p DECIMALS 2,
+          week30gr TYPE p DECIMALS 2,
+          week31sj TYPE p DECIMALS 2,
+          week31gr TYPE p DECIMALS 2,
+          week32sj TYPE p DECIMALS 2,
+          week32gr TYPE p DECIMALS 2,
+          week33sj TYPE p DECIMALS 2,
+          week33gr TYPE p DECIMALS 2,
+          week34sj TYPE p DECIMALS 2,
+          week34gr TYPE p DECIMALS 2,
+          week35sj TYPE p DECIMALS 2,
+          week35gr TYPE p DECIMALS 2,
+          week36sj TYPE p DECIMALS 2,
+          week36gr TYPE p DECIMALS 2,
+          week37sj TYPE p DECIMALS 2,
+          week37gr TYPE p DECIMALS 2,
+          week38sj TYPE p DECIMALS 2,
+          week38gr TYPE p DECIMALS 2,
+          week39sj TYPE p DECIMALS 2,
+          week39gr TYPE p DECIMALS 2,
+          week40sj TYPE p DECIMALS 2,
+          week40gr TYPE p DECIMALS 2,
+          week41sj TYPE p DECIMALS 2,
+          week41gr TYPE p DECIMALS 2,
+          week42sj TYPE p DECIMALS 2,
+          week42gr TYPE p DECIMALS 2,
+          week43sj TYPE p DECIMALS 2,
+          week43gr TYPE p DECIMALS 2,
+          week44sj TYPE p DECIMALS 2,
+          week44gr TYPE p DECIMALS 2,
+          week45sj TYPE p DECIMALS 2,
+          week45gr TYPE p DECIMALS 2,
+          week46sj TYPE p DECIMALS 2,
+          week46gr TYPE p DECIMALS 2,
+          week47sj TYPE p DECIMALS 2,
+          week47gr TYPE p DECIMALS 2,
+          week48sj TYPE p DECIMALS 2,
+          week48gr TYPE p DECIMALS 2,
+          week49sj TYPE p DECIMALS 2,
+          week49gr TYPE p DECIMALS 2,
+          week50sj TYPE p DECIMALS 2,
+          week50gr TYPE p DECIMALS 2,
+          week51sj TYPE p DECIMALS 2,
+          week51gr TYPE p DECIMALS 2,
+          week52sj TYPE p DECIMALS 2,
+          week52gr TYPE p DECIMALS 2,
+
+        END OF ty_kk,
+
+        BEGIN OF ty_kk2,
+          zkk     TYPE zmmtb_kk_kp-zkk,
+          zstyle  TYPE zmmtb_kk_kp-zstyle,
+          xblnr   TYPE matdoc-xblnr,
+          qtysj   TYPE p DECIMALS 2,
+          qtygr   TYPE p DECIMALS 2,
+          meins   TYPE matdoc-meins,
+          mdgr    TYPE matdoc-mblnr,
+          mdsj    TYPE matdoc-mblnr,
+          budat   TYPE matdoc-budat,
+          zbctype TYPE zmmtb_hmigo-zbctype,
+          zbcdoc  TYPE zmmtb_hmigo-zbcdoc,
+          zbcdate TYPE zmmtb_hmigo-zbcdate,
+
+
+        END OF ty_kk2,
+
+        BEGIN OF ty_hide,
+          week   TYPE lvc_fname,
+          status TYPE c,
+        END OF ty_hide,
+
+        BEGIN OF ty_zkkkp,
+          zkk        TYPE zmmtb_kk_kp-zkk,
+          zstyle     TYPE zmmtb_kk_kp-zstyle,
+          zqty       TYPE zmmtb_kk_kp-zqty,
+          zkp        TYPE zmmtb_kk_kp-zkp,
+          zqtysnd    TYPE zmmtb_kk_kp-zqtysnd,
+          zqty_panel TYPE zmmtb_kk_kp-zqty_panel,
+
+        END OF ty_zkkkp,
+
+        BEGIN OF ty_zkk,
+          zkk    TYPE c LENGTH 25,
+          zstyle TYPE zmmtb_kk_kp-zstyle,
+
+        END OF ty_zkk,
+
+        BEGIN OF ty_zkskp,                   " Update kksub Req by Mbk Rya 240720
+          zks    TYPE zmmtb_ks_kp-zks,
+          zkp    TYPE zmmtb_ks_kp-zkp,
+          zkk    TYPE zmmtb_ks_kp-zkk,
+          zstyle TYPE zmmtb_ks_kp-zstyle,
+        END OF ty_zkskp,                     " End of Update kksub Req by Mbk Rya 240720
+
+        BEGIN OF ty_ekpo,
+          ebeln TYPE ekpo-ebeln, "PO NO
+          ebelp TYPE ekpo-ebelp, " PO ITEM
+          text  TYPE ekpo-txz01,
+        END OF ty_ekpo,
+
+        BEGIN OF ty_ekkn,               " Update PO/KP Req by Mbk Rya 240720
+          ebeln TYPE ekkn-ebeln,
+          ebelp TYPE ekkn-ebelp,
+          vbeln TYPE ekkn-vbeln,
+        END OF ty_ekkn,                " End of Update PO/KP Req by Mbk Rya 240720
+
+        BEGIN OF ty_kshdr,
+          zkk   TYPE zmmtb_ks_hdr-zkk,
+          zks   TYPE zmmtb_ks_hdr-zks,
+          zkkbc TYPE zmmtb_ks_hdr-zkkbc,
+          werks TYPE zmmtb_ks_hdr-werks,
+          zkp   TYPE zmmtb_ks_kp-zkp,
+        END OF ty_kshdr,
+
+        BEGIN OF ty_kkhdr,
+          zkk     TYPE zmmtb_kk_hdr-zkk,
+          zname1v TYPE zmmtb_kk_hdr-zname1v,
+          zkkpo   TYPE zmmtb_kk_hdr-zkkpo,
+          werks   TYPE zmmtb_kk_hdr-werks,
+
+        END OF ty_kkhdr,
+
+
+        BEGIN OF ty_matdoc,
+          bktxt     TYPE matdoc-bktxt,
+          erfmg     TYPE p DECIMALS 2,
+          mblnr     TYPE matdoc-mblnr,
+          xblnr     TYPE matdoc-xblnr,
+          budat     TYPE matdoc-budat,
+          bwart     TYPE matdoc-bwart,
+          cancelled TYPE matdoc-cancelled,
+          ebeln     TYPE matdoc-ebeln,
+          ebelp     TYPE matdoc-ebelp,
+          matnr     TYPE matdoc-matnr,
+          mat_kdauf TYPE matdoc-mat_kdauf,
+          meins     TYPE matdoc-meins,
+          zbctype   TYPE zmmtb_hmigo-zbctype,
+          zbcdoc    TYPE zmmtb_hmigo-zbcdoc,
+          zbcdate   TYPE zmmtb_hmigo-zbcdate,
+          week      TYPE scal-week,
+          kdauf     TYPE matdoc-kdauf,
+
+
+
+        END OF ty_matdoc,
+
+        BEGIN OF ty_gr,
+          ebelp     TYPE matdoc-ebelp,
+          ebeln     TYPE matdoc-ebeln,
+          zstyle    TYPE zmmtb_kk_kp-zstyle,
+          bwart     TYPE matdoc-bwart,
+          erfmg     TYPE matdoc-erfmg,
+          cancelled TYPE matdoc-cancelled,
+          budat     TYPE matdoc-budat,
+          bktxt     TYPE matdoc-bktxt,
+          xblnr     TYPE matdoc-xblnr,
+          mblnr     TYPE matdoc-mblnr,
+          week      TYPE scal-week,
+
+        END OF ty_gr,
+
+
+        BEGIN OF ty_lfa1,
+          lifnr TYPE lfa1-lifnr,
+          name1 TYPE lfa1-name1,
+        END OF ty_lfa1,
+
+
+        BEGIN OF ty_2nd, " ====================================================Secondary Data=================================================================
+
+          zkp     TYPE zmmtb_kk_kp-zkp,
+          skk     TYPE zmmtb_kk_kp-zmm_skk, " 2nd
+          zname1v TYPE lfa1-name1,
+          zkk     TYPE c LENGTH 25,
+          zks     TYPE zmmtb_ks_hdr-zks,
+          zkkbc   TYPE zmmtb_ks_hdr-zkkbc,
+          zkkpo   TYPE zmmtb_kk_hdr-zkkpo,
+          zqty    TYPE zmmtb_kk_kp-zqty,
+          qtygi   TYPE p DECIMALS 2,  " 2nd
+          balgi   TYPE p DECIMALS 2, "2nd
+          qtygr   TYPE p DECIMALS 2,  " 2nd
+          balgr   TYPE p DECIMALS 2, "2nd
+          zunit   TYPE zmmtb_kk_kp-zunit, "2nd
+
+        END OF ty_2nd,
+
+        BEGIN OF ty_gi,
+          zkp     TYPE zmmtb_sjcmt-zkp,
+          zkk     TYPE zmmtb_sjcmt-zkk,
+          mblnr   TYPE zmmtb_sjcmt-mblnr,
+          budat   TYPE matdoc-budat,
+          wip     TYPE zmmtb_sjcmt-matnr,
+          zstyle  TYPE zmmtb_sjcmt-zstyle,
+          qty     TYPE zmmtb_sjcmt-zqty,
+          zunit   TYPE zmmtb_sjcmt-zunit,
+          zbctype TYPE zmmtb_hmigo-zbctype,
+          zbcdoc  TYPE zmmtb_hmigo-zbcdoc,
+          zbcdate TYPE zmmtb_hmigo-zbcdate,
+
+        END OF ty_gi,
+
+
+        BEGIN OF ty_gr2,
+          zkp    TYPE zmmtb_kk_kp-zkp,
+          zkk    TYPE zmmtb_kk_kp-zkk,
+          zkkpo  TYPE zmmtb_kk_hdr-zkkpo,
+          mblnr  TYPE matdoc-mblnr,
+          budat  TYPE matdoc-budat,
+          wip    TYPE matdoc-matnr,
+          qty    TYPE matdoc-erfmg,
+          uom    TYPE matdoc-erfme,
+          agr    TYPE matdoc-dmbtr, " amount gr
+          curr   TYPE matdoc-waers,
+          sj     TYPE mkpf-xblnr,
+          bct    TYPE zmmtb_hmigo-zbctype, "bctype
+          bcd    TYPE zmmtb_hmigo-zbcdoc,  "bc document
+          bca    TYPE zmmtb_hmigo-zbcaju,  "bc aju
+          bcdate TYPE zmmtb_hmigo-zbcdate,
+        END OF ty_gr2,
+
+
+        BEGIN OF ty_zkkkp_2nd,
+          zkk        TYPE zmmtb_kk_kp-zkk,
+*          zstyle      TYPE zmmtb_kk_kp-zstyle,
+          zqty       TYPE zmmtb_kk_kp-zqty,
+          zkp        TYPE zmmtb_kk_kp-zkp,
+          zqtysnd    TYPE zmmtb_kk_kp-zqtysnd,
+          zqty_panel TYPE zmmtb_kk_kp-zqty_panel,
+          zmm_skk    TYPE zmmtb_kk_kp-zmm_skk,
+          zunit      TYPE zmmtb_kk_kp-zunit,
+
+
+        END OF ty_zkkkp_2nd,
+
+        BEGIN OF ty_lfa1_2,
+          lifnr TYPE lfa1-lifnr,
+          name1 TYPE lfa1-name1,
+        END OF ty_lfa1_2,
+
+
+        BEGIN OF ty_kkhdr_2nd,
+          zkk     TYPE zmmtb_kk_hdr-zkk,
+          zname1v TYPE zmmtb_kk_hdr-zname1v,
+          zkkpo   TYPE zmmtb_kk_hdr-zkkpo,
+          werks   TYPE zmmtb_kk_hdr-werks,
+
+        END OF ty_kkhdr_2nd,
+
+        BEGIN OF ty_hdr,
+          zkk     TYPE zmmtb_kk_hdr-zkk,
+          zname1v TYPE zmmtb_kk_hdr-zname1v,
+          zkkpo   TYPE zmmtb_kk_hdr-zkkpo,
+          werks   TYPE zmmtb_kk_hdr-werks,
+          zks     TYPE zmmtb_ks_hdr-zks,
+          zkkbc   TYPE zmmtb_ks_hdr-zkkbc,
+
+        END OF ty_hdr,
+
+        BEGIN OF ty_ks,
+          zkk   TYPE zmmtb_ks_hdr-zkk,
+          zks   TYPE zmmtb_ks_hdr-zks,
+          zkkbc TYPE zmmtb_ks_hdr-zkkbc,
+        END OF ty_ks,
+
+        BEGIN OF ty_kshdr_2nd,
+          zkk   TYPE zmmtb_ks_hdr-zkk,
+          zks   TYPE zmmtb_ks_hdr-zks,
+          zkkbc TYPE zmmtb_ks_hdr-zkkbc,
+          werks TYPE zmmtb_ks_hdr-werks,
+        END OF ty_kshdr_2nd,
+
+        BEGIN OF ty_sj, " GI
+          zkk         TYPE zmmtb_sjcmt-zkk,
+          zkp         TYPE zmmtb_sjcmt-zkp,
+          matnr       TYPE zmmtb_sjcmt-matnr, " wip
+          zstyle      TYPE zmmtb_sjcmt-zstyle,
+          zqty        TYPE zmmtb_sjcmt-zqty,
+          zunit       TYPE zmmtb_sjcmt-zunit,
+          mblnr       TYPE zmmtb_sjcmt-mblnr,
+          budat       TYPE matdoc-budat,
+          zbctype     TYPE zmmtb_hmigo-zbctype,
+          zbcdoc      TYPE zmmtb_hmigo-zbcdoc,
+          zbcdate     TYPE zmmtb_hmigo-zbcdate,
+          cancelled   TYPE matdoc-cancelled,
+
+        END OF ty_sj,
+
+        BEGIN OF ty_bc,
+          mblnr   TYPE mkpf-mblnr,
+          xblnr   TYPE mkpf-xblnr,
+          zbctype TYPE zmmtb_hmigo-zbctype,
+          zbcdoc  TYPE zmmtb_hmigo-zbcdoc,
+          zbcaju  TYPE zmmtb_hmigo-zbcaju,
+          zbcdate TYPE zmmtb_hmigo-zbcdate,
+
+        END OF ty_bc,
+
+
+        BEGIN OF ty_matdoc_2nd,
+          mblnr     TYPE matdoc-mblnr,
+          matnr     TYPE matdoc-matnr,
+          erfmg     TYPE matdoc-erfmg,
+          erfme     TYPE matdoc-erfme,
+          dmbtr     TYPE matdoc-dmbtr,
+          waers     TYPE matdoc-waers,
+          bwart     TYPE matdoc-bwart,
+          cancelled TYPE matdoc-cancelled,
+          ebeln     TYPE matdoc-ebeln,
+          ebelp     TYPE matdoc-ebelp,
+          lgort_sid TYPE matdoc-lgort_sid, "zsub dan cmt1.
+          budat     TYPE matdoc-budat,
+
+        END OF ty_matdoc_2nd, "==================================================================End Of Secondary Data=================================================
+
+        BEGIN OF ty_cmtrp,    "===================================================================BEGIN OF CMT MVT DATA================================================
+          zkp     TYPE zmmtb_kk_kp-zkp,
+          zkk     TYPE zmmtb_kk_kp-zkk,
+          zkkbc   TYPE zmmtb_ks_hdr-zkkbc, " 010920 REQ BY MBK RIYA
+          zname1v TYPE lfa1-name1,
+          kwmeng  TYPE vbap-kwmeng,
+          qtykk   TYPE P, " Updated by PB-FT06 Round value Req by Mbk rya 021020 ( zmmtb_kk_kp-zqtysnd to P)
+          erfmg   TYPE matdoc-erfmg,
+          qtysj   TYPE p DECIMALS 2,         " 010920 REQ BY MBK RIYA
+          var     TYPE p DECIMALS 2,
+          meins   TYPE vbap-meins,
+          zprice  TYPE zmmtb_kk_kp-zprice,
+          vkk     TYPE p DECIMALS 2,
+          curr    TYPE zmmtb_kk_kp-zcurr,
+          zkkpo   TYPE zmmtb_kk_hdr-zkkpo,
+          skk     TYPE zmmtb_kk_kp-zmm_skk,
+          zks     TYPE zmmtb_ks_kp-zks,
+          matnr   TYPE zmmtb_prm_kp-matnr,
+*          actkk    TYPE zmmtb_pno-menge_actual,
+*          qtyp     TYPE p DECIMALS 2,
+          totc    TYPE zmmtb_pgi-menge_req,
+          gi      TYPE zmmtb_pgi-menge,
+          ri      TYPE zmmtb_pgi-menge_r,
+          tot     TYPE p DECIMALS 2,
+          balqty  TYPE p DECIMALS 2,
+          zunit   TYPE zmmtb_prm_kp-zunit,
+
+        END OF ty_cmtrp,
+
+        BEGIN OF ty_pgirp,
+          zkksub   TYPE zmmtb_pgi-zkksub,
+          matnr    TYPE zmmtb_pgi-matnr,
+          uom      TYPE zmmtb_pgi-meins,
+          matdoc   TYPE zmmtb_pgi-mblnr,
+          qty      TYPE zmmtb_pgi-menge,
+          budat    TYPE zmmtb_pgi-budat,
+          bldat    TYPE zmmtb_pgi-bldat,
+          zbctype  TYPE zmmtb_hmigo-zbctype,
+          zbcdoc   TYPE zmmtb_hmigo-zbcdoc,
+          zbcdate  TYPE zmmtb_hmigo-zbcdate,
+          mblnr_r  TYPE zmmtb_pgi-mblnr_r,
+          menge_r  TYPE zmmtb_pgi-menge_r,
+          budatr   TYPE matdoc-budat,
+          bldatr   TYPE matdoc-bldat,
+          zbctype2 TYPE zmmtb_hmigo-zbctype,
+          zbcdoc2  TYPE zmmtb_hmigo-zbcdoc,
+          zbcdate2 TYPE zmmtb_hmigo-zbcdate,
+          xblnr    TYPE matdoc-xblnr,
+
+        END OF ty_pgirp,
+
+
+        BEGIN OF ty_grpodtl,           "Types Double Click detail GR PO req By MBk Rya 010920
+          ebeln TYPE matdoc-ebeln,
+          mblnr TYPE matdoc-mblnr,
+          budat TYPE matdoc-budat,
+          xblnr TYPE matdoc-xblnr,
+          erfmg TYPE matdoc-erfmg,
+          meins TYPE matdoc-meins,
+
+        END OF ty_grpodtl,
+
+        BEGIN OF ty_sjdtl,            "Types Double Click detail GR SJ req By MBk Rya 010920
+
+          bktxt   TYPE matdoc-bktxt,
+          mblnr   TYPE matdoc-mblnr,
+          budat   TYPE matdoc-budat,
+          xblnr   TYPE matdoc-xblnr,
+          erfmg   TYPE p DECIMALS 2,
+          meins   TYPE matdoc-meins,
+          bwart   TYPE matdoc-bwart,
+          zbctype TYPE zmmtb_hmigo-zbctype,
+          zbcdoc  TYPE zmmtb_hmigo-zbcdoc,
+          zbcdate TYPE zmmtb_hmigo-zbcdate,
+
+        END OF ty_sjdtl,            " End of Updating.
+
+        BEGIN OF ty_zkp,
+          zkp     TYPE zmmtb_kk_kp-zkp,
+          zkk     TYPE zmmtb_kk_kp-zkk,
+          qtykk   TYPE zmmtb_kk_kp-zqtysnd,
+          zprice  TYPE zmmtb_kk_kp-zprice,
+          curr    TYPE zmmtb_kk_kp-zcurr,
+          skk     TYPE zmmtb_kk_kp-zmm_skk,
+          zks     TYPE zmmtb_ks_hdr-zks,
+          del_ind TYPE zmmtb_kk_kp-del_ind,
+          zstyle  TYPE zmmtb_kk_kp-zstyle,
+          zqtysnd TYPE zmmtb_kk_kp-zqtysnd,
+          zkkpo   TYPE zmmtb_kk_hdr-zkkpo,
+
+        END OF ty_zkp,
+
+        BEGIN OF ty_zhdr,
+          zkk     TYPE zmmtb_kk_hdr-zkk,
+          zname1v TYPE zmmtb_kk_hdr-zname1v,
+          zkkpo   TYPE zmmtb_kk_hdr-zkkpo,
+          werks   TYPE zmmtb_kk_hdr-werks,
+          zkkbc   TYPE zmmtb_ks_hdr-zkkbc,
+        END OF ty_zhdr,
+
+
+        BEGIN OF ty_vbap,
+          vbeln  TYPE vbap-vbeln,
+          abgru  TYPE vbap-abgru,
+          kwmeng TYPE vbap-kwmeng,
+          posnr  TYPE vbap-posnr,
+          matnr  TYPE vbap-matnr,
+          meins  TYPE vbap-meins,
+        END OF ty_vbap,
+
+        BEGIN OF ty_zks,
+          zks TYPE zmmtb_ks_kp-zks,
+          zkp TYPE zmmtb_ks_kp-zkp,
+          zkk TYPE zmmtb_ks_kp-zkk,
+        END OF ty_zks,
+
+        BEGIN OF ty_mdc,
+          ebeln     TYPE matdoc-ebeln,
+          bwart     TYPE matdoc-bwart,
+          cancelled TYPE matdoc-cancelled,
+          erfmg     TYPE matdoc-erfmg,
+          ebelp     TYPE matdoc-ebelp,
+          mblnr     TYPE matdoc-mblnr,
+          xblnr     TYPE matdoc-xblnr,
+          budat     TYPE matdoc-budat,
+          kdauf     TYPE matdoc-kdauf,
+          meins     TYPE matdoc-meins,
+
+        END OF ty_mdc,
+
+        BEGIN OF ty_prm,
+          zks     TYPE zmmtb_prm_kp-zks,
+          zkp     TYPE zmmtb_prm_kp-zkp,
+          matnr   TYPE zmmtb_prm_kp-matnr,
+          zunit   TYPE zmmtb_prm_kp-zunit,
+          zqtyori TYPE zmmtb_prm_kp-zqtyori,
+        END OF ty_prm,
+
+        BEGIN OF ty_vendor,
+          lifnr TYPE lfa1-lifnr,
+          name1 TYPE lfa1-name1,
+        END OF ty_vendor,
+
+        BEGIN OF ty_pno,
+          vbeln        TYPE zmmtb_pno-vbeln,
+          matnr        TYPE zmmtb_pno-matnr,
+          menge_actual TYPE zmmtb_pno-menge_actual,
+          addta        TYPE zmmtb_pno-addta,
+        END OF ty_pno,
+
+        BEGIN OF ty_mdcr,                    " adding cancellation by MIGO.
+          smbln     TYPE matdoc-smbln,
+          matnr     TYPE matdoc-matnr,
+          bktxt     TYPE matdoc-bktxt,
+          mat_kdauf TYPE matdoc-mat_kdauf,
+        END OF ty_mdcr,                       " end of adding cancellation by MIGO.
+
+
+        BEGIN OF ty_mat,                " Adding qty SJ Req By Mbk Riya CMT Movement 01/09/20
+          bktxt     TYPE matdoc-bktxt,
+          erfmg     TYPE p DECIMALS 2,
+          mblnr     TYPE matdoc-mblnr,
+          xblnr     TYPE matdoc-xblnr,
+          budat     TYPE matdoc-budat,
+          bwart     TYPE matdoc-bwart,
+          cancelled TYPE matdoc-cancelled,
+          ebeln     TYPE matdoc-ebeln,
+          ebelp     TYPE matdoc-ebelp,
+          matnr     TYPE matdoc-matnr,
+          mat_kdauf TYPE matdoc-mat_kdauf,
+          lgort_sid TYPE matdoc-lgort_sid,
+          meins     TYPE matdoc-meins,
+          zbctype   TYPE zmmtb_hmigo-zbctype,
+          zbcdoc    TYPE zmmtb_hmigo-zbcdoc,
+          zbcdate   TYPE zmmtb_hmigo-zbcdate,
+
+        END OF ty_mat,                   " end of updating
+
+        BEGIN OF ty_hmigo,
+          mblnr   TYPE zmmtb_hmigo-mblnr,
+          zbctype TYPE zmmtb_hmigo-zbctype,
+          zbcdoc  TYPE zmmtb_hmigo-zbcdoc,
+          zbcdate TYPE zmmtb_hmigo-zbcdate,
+        END OF ty_hmigo,
+
+
+        BEGIN OF ty_hmigo2,
+          mblnr   TYPE zmmtb_hmigo-mblnr,
+          zbctype TYPE zmmtb_hmigo-zbctype,
+          zbcdoc  TYPE zmmtb_hmigo-zbcdoc,
+          zbcdate TYPE zmmtb_hmigo-zbcdate,
+          xblnr   TYPE matdoc-xblnr,
+        END OF ty_hmigo2,            " End of Update
+
+
+        BEGIN OF ty_pgi,
+          vbeln      TYPE zmmtb_pgi-vbeln,
+          zkksub     TYPE zmmtb_pgi-zkksub,
+          menge      TYPE zmmtb_pgi-menge,
+          menge_r    TYPE zmmtb_pgi-menge_r,
+          menge_canc TYPE zmmtb_pgi-menge_canc,
+          matnr      TYPE zmmtb_pgi-matnr,
+          menge_req  TYPE zmmtb_pgi-menge_req,
+          mblnr_r    TYPE zmmtb_pgi-mblnr_r,
+*          mjahr_r    TYPE zmmtb_pgi-mjahr_r, "20200915 - Updated by PB-AB (Exclude Cancelled Matdoc Return) Req by Mas Ridho
+          meins      TYPE zmmtb_pgi-meins,
+          mblnr      TYPE zmmtb_pgi-mblnr,
+*          mjahr      TYPE zmmtb_pgi-mjahr, "20200915 - Updated by PB-AB (Exclude Cancelled Matdoc Return) Req by Mas Ridho
+          budat      TYPE zmmtb_pgi-budat,
+          bldat      TYPE zmmtb_pgi-bldat,
+          zeile      TYPE zmmtb_pgi-zeile,
+          budatr     TYPE matdoc-budat,
+          bldatr     TYPE matdoc-bldat,
+          smbln      TYPE matdoc-smbln,
+
+
+
+        END OF ty_pgi, "============================================== END OF CMT MVT DATA==========================================================================
+
+        "=======================================================================Begin Of Scrap Data=======================================================================
+        "Req By Mbk Riya 310820
+
+        BEGIN OF ty_scrap,
+          zkp   TYPE zmmtb_ks_kp-zkp,
+          vnd   TYPE lfa1-name1,
+          zkk   TYPE zmmtb_ks_kp-zkk,
+          zks   TYPE zmmtb_ks_kp-zks,
+          zkkbc TYPE zmmtb_ks_hdr-zkkbc,
+          zkkpo TYPE zmmtb_kk_hdr-zkkpo,
+          maktx TYPE makt-maktx,
+          meins TYPE matdoc-meins,
+          menge TYPE matdoc-menge,
+
+        END OF ty_scrap,
+
+        BEGIN OF ty_scrapdtl,
+          mblnr   TYPE matdoc-mblnr,
+          xblnr   TYPE matdoc-xblnr,
+          budat   TYPE matdoc-budat,
+          zbctype TYPE zmmtb_hmigo-zbctype,
+          zbcdoc  TYPE zmmtb_hmigo-zbcdoc,
+          zbcdate TYPE zmmtb_hmigo-zbcdate,
+          menge   TYPE matdoc-menge,
+          meins   TYPE matdoc-meins,
+          bktxt   TYPE matdoc-bktxt,
+        END OF ty_scrapdtl,
+
+
+
+        BEGIN OF ty_kkk,
+
+          zkk     TYPE zmmtb_ks_kp-zkk,
+          zkp     TYPE zmmtb_ks_kp-zkp,
+          zks     TYPE zmmtb_ks_kp-zks,
+          zstyle  TYPE zmmtb_ks_kp-zstyle,
+          zkkbc   TYPE zmmtb_ks_hdr-zkkbc,
+          zkkpo   TYPE zmmtb_kk_hdr-zkkpo,
+          werks   TYPE zmmtb_kk_hdr-werks,
+          zname1v TYPE zmmtb_kk_hdr-zname1v,
+
+        END OF ty_kkk,
+
+        BEGIN OF ty_doc,
+          mblnr     TYPE matdoc-mblnr,
+          meins     TYPE matdoc-meins,
+          menge     TYPE matdoc-menge,
+          bwart     TYPE matdoc-bwart,
+          cancelled TYPE matdoc-cancelled,
+          bktxt     TYPE matdoc-bktxt,
+          matbf     TYPE matdoc-matbf,
+          xblnr     TYPE matdoc-xblnr,
+          budat     TYPE matdoc-budat,
+          maktx     TYPE makt-maktx,
+          zbctype   TYPE zmmtb_hmigo-zbctype,
+          zbcdoc    TYPE zmmtb_hmigo-zbcdoc,
+          zbcdate   TYPE zmmtb_hmigo-zbcdate,
+        END OF ty_doc,
+
+        BEGIN OF ty_migo,
+          mblnr   TYPE zmmtb_hmigo-mblnr,
+          zbctype TYPE zmmtb_hmigo-zbctype,
+          zbcdoc  TYPE zmmtb_hmigo-zbcdoc,
+          zbcdate TYPE zmmtb_hmigo-zbcdate,
+        END OF ty_migo,
+
+
+        BEGIN OF ty_vnd,
+          lifnr TYPE lfa1-lifnr,
+          name1 TYPE lfa1-name1,
+        END OF ty_vnd,
+
+        BEGIN OF ty_sub,
+          zks TYPE c LENGTH 25,
+        END OF ty_sub.
+
+
+"======================================================================End Of Data Scrap===============================================
+
+
+
+DATA: it_report     TYPE STANDARD TABLE OF ty_kk,
+      wa_report     TYPE ty_kk,
+      it_report2    TYPE STANDARD TABLE OF ty_kk2 WITH HEADER LINE,
+      wa_report2    TYPE ty_kk2,
+      it_report2_d  TYPE STANDARD TABLE OF ty_kk2,
+      wa_report2_d  TYPE ty_kk2,
+      it_zkkkp      TYPE STANDARD TABLE OF ty_zkkkp WITH HEADER LINE,
+      wa_zkkkp      TYPE ty_zkkkp,
+      it_kshdr      TYPE STANDARD TABLE OF ty_kshdr WITH HEADER LINE,
+      wa_kshdr      TYPE ty_kshdr,
+      it_matdoc     TYPE STANDARD TABLE OF ty_matdoc WITH HEADER LINE,
+      wa_matdoc     TYPE ty_matdoc,
+      it_zkskp      TYPE STANDARD TABLE OF ty_zkskp WITH HEADER LINE,  "" Update KP/KK Req by Mbk Rya 240720
+      wa_zkskp      TYPE ty_zkskp,
+      it_ekkn       TYPE STANDARD TABLE OF ty_ekkn WITH HEADER LINE,   " Update PO/KP Req by Mbk Rya 240720
+      wa_ekkn       TYPE ty_ekkn,
+      it_matdoc2    TYPE STANDARD TABLE OF ty_matdoc WITH HEADER LINE,
+      wa_matdoc2    TYPE ty_matdoc,
+      it_matdoc1    TYPE STANDARD TABLE OF ty_matdoc WITH HEADER LINE,
+      wa_matdoc1    TYPE ty_matdoc,
+      it_matdoc9    TYPE STANDARD TABLE OF ty_matdoc WITH HEADER LINE,
+      wa_matdoc9    TYPE ty_matdoc,
+      it_kkhdr      TYPE STANDARD TABLE OF ty_kkhdr WITH HEADER LINE,
+      wa_kkhdr      TYPE ty_kkhdr,
+      it_lfa1       TYPE STANDARD TABLE OF ty_lfa1 WITH HEADER LINE,
+      wa_lfa1       TYPE ty_lfa1,
+      it_zkk        TYPE STANDARD TABLE OF ty_zkk WITH HEADER LINE,
+      wa_zkk        TYPE ty_zkk,
+      it_ekpo       TYPE STANDARD TABLE OF ty_ekpo WITH HEADER LINE,
+      wa_ekpo       TYPE ty_ekpo,
+      it_gr         TYPE STANDARD TABLE OF ty_gr WITH HEADER LINE,
+      wa_gr         TYPE ty_gr,
+      it_gr1        TYPE STANDARD TABLE OF ty_gr WITH HEADER LINE,
+      wa_gr1        TYPE ty_gr,
+      it_hide       TYPE STANDARD TABLE OF ty_hide,
+      it_colom      TYPE STANDARD TABLE OF ty_hide,
+      wa_hide       TYPE ty_hide,
+      wa_colom      TYPE ty_hide,
+*     ===========================================================Begin of Data Secondary ===================================================
+      it_report_2nd TYPE STANDARD TABLE OF ty_2nd,
+      wa_report_2nd TYPE ty_2nd,
+      it_gi         TYPE STANDARD TABLE OF  ty_gi WITH HEADER LINE,
+      wa_gi         TYPE ty_gi,
+      it_gi_d       TYPE STANDARD TABLE OF  ty_gi,
+      wa_gi_d       TYPE ty_gi,
+      it_gr2        TYPE STANDARD TABLE OF ty_gr2 WITH HEADER LINE,
+      wa_gr2        TYPE ty_gr2,
+      it_gr2_d      TYPE STANDARD TABLE OF ty_gr2,
+      wa_gr2_d      TYPE ty_gr2,
+      it_zkkp_2nd   TYPE STANDARD TABLE OF ty_zkkkp_2nd WITH HEADER LINE,
+      wa_zkkp_2nd   TYPE ty_zkkkp_2nd,
+      it_zkkp_2nd2  TYPE STANDARD TABLE OF ty_zkkkp_2nd WITH HEADER LINE,
+      wa_zkkp_2nd2  TYPE ty_zkkkp_2nd,
+      it_kkhdr_2nd  TYPE STANDARD TABLE OF ty_kkhdr_2nd WITH HEADER LINE,
+      wa_kkhdr_2nd  TYPE ty_kkhdr_2nd,
+      it_kshdr_2nd  TYPE STANDARD TABLE OF ty_kshdr_2nd WITH HEADER LINE,
+      wa_kshdr_2nd  TYPE ty_kshdr_2nd,
+      it_sj         TYPE STANDARD TABLE OF ty_sj  WITH HEADER LINE,
+      wa_sj         TYPE ty_sj,
+      it_qtygi      TYPE STANDARD TABLE OF ty_sj WITH HEADER LINE,
+      wa_qtygi      TYPE ty_sj,
+      it_matdoc_2nd TYPE STANDARD TABLE OF ty_matdoc_2nd WITH HEADER LINE,
+      wa_matdoc_2nd TYPE ty_matdoc_2nd,
+      it_qtygr      TYPE STANDARD TABLE OF ty_matdoc_2nd WITH HEADER LINE,
+      wa_qtygr      TYPE ty_matdoc_2nd,
+      it_hdr        TYPE STANDARD TABLE OF ty_hdr WITH HEADER LINE,
+      wa_hdr        TYPE ty_hdr,
+      it_hdr1       TYPE STANDARD TABLE OF ty_hdr WITH HEADER LINE,
+      wa_hdr1       TYPE ty_hdr,
+      it_bc         TYPE STANDARD TABLE OF ty_bc WITH HEADER LINE,
+      wa_bc         TYPE ty_bc,
+      it_lfa1_2     TYPE STANDARD TABLE OF ty_lfa1_2 WITH HEADER LINE,
+      wa_lfa1_2     TYPE ty_lfa1_2,
+      it_ks         TYPE STANDARD TABLE OF ty_ks WITH HEADER LINE,
+      wa_ks         TYPE ty_ks,
+*      ===========================================================================End of Data Secondary===========================================
+
+*       =======================================================================BEGIN OF DATA CMT Movement ==================================================
+      it_cmtrp      TYPE STANDARD TABLE OF ty_cmtrp,
+      wa_cmtrp      TYPE ty_cmtrp,
+      it_pgirp      TYPE STANDARD TABLE OF ty_pgirp,
+      wa_pgirp      TYPE ty_pgirp,
+      it_pgirp_d    TYPE STANDARD TABLE OF ty_pgirp,
+      wa_pgirp_d    TYPE ty_pgirp,
+      it_grpodtl    TYPE STANDARD TABLE OF  ty_grpodtl,
+      wa_grpodtl    TYPE ty_grpodtl,
+      it_grpodtl_d  TYPE STANDARD TABLE OF ty_grpodtl,
+      wa_grpodtl_d  TYPE ty_grpodtl,
+      it_sjdtl      TYPE STANDARD TABLE OF ty_sjdtl,
+      wa_sjdtl      TYPE ty_sjdtl,
+      it_sjdtl_d    TYPE STANDARD TABLE OF ty_sjdtl,
+      wa_sjdtl_d    TYPE ty_sjdtl,
+      it_zkp        TYPE STANDARD TABLE OF ty_zkp WITH HEADER LINE,
+      wa_zkp        TYPE ty_zkp,
+      it_sumkk      TYPE STANDARD TABLE OF ty_zkp WITH HEADER LINE,
+      wa_sumkk      TYPE ty_zkp,
+      it_zhdr       TYPE STANDARD TABLE OF ty_zhdr WITH HEADER LINE,
+      wa_zhdr       TYPE ty_zhdr,
+      it_vbap       TYPE STANDARD TABLE OF ty_vbap WITH HEADER LINE,
+      wa_vbap       TYPE ty_vbap,
+      it_sumvbap    TYPE STANDARD TABLE OF ty_vbap WITH HEADER LINE,
+      wa_sumvbap    TYPE ty_vbap,
+      it_zks        TYPE STANDARD TABLE OF ty_zks WITH HEADER LINE,
+      wa_zks        TYPE ty_zks,
+      it_mdc        TYPE STANDARD TABLE OF ty_mdc WITH HEADER LINE,
+      wa_mdc        TYPE ty_mdc,
+      it_summdc     TYPE STANDARD TABLE OF ty_mdc WITH HEADER LINE,
+      wa_summdc     TYPE ty_mdc,
+      it_prm        TYPE STANDARD TABLE OF ty_prm WITH HEADER LINE,
+      wa_prm        TYPE ty_prm,
+      it_sumprm     TYPE STANDARD TABLE OF ty_prm WITH HEADER LINE,
+      wa_sumprm     TYPE ty_prm,
+      it_pgi        TYPE STANDARD TABLE OF ty_pgi WITH HEADER LINE,
+      wa_pgi        TYPE ty_pgi,
+      it_pgi2       TYPE STANDARD TABLE OF ty_pgi WITH HEADER LINE,
+      wa_pgi2       TYPE ty_pgi,
+      it_pgi3       TYPE STANDARD TABLE OF ty_pgi WITH HEADER LINE,
+      wa_pgi3       TYPE ty_pgi,
+      it_pgi4       TYPE STANDARD TABLE OF ty_pgi WITH HEADER LINE,
+      wa_pgi4       TYPE ty_pgi,
+      it_sumpgi     TYPE STANDARD TABLE OF ty_pgi WITH HEADER LINE,
+      wa_sumpgi     TYPE ty_pgi,
+      it_vendor     TYPE STANDARD TABLE OF ty_vendor WITH HEADER LINE,
+      wa_vendor     TYPE ty_vendor,
+      it_pno        TYPE STANDARD TABLE OF ty_pno WITH HEADER LINE,
+      wa_pno        TYPE ty_pno,
+      it_mdcr       TYPE STANDARD TABLE OF ty_mdcr WITH HEADER LINE,
+      wa_mdcr       TYPE ty_mdcr,
+      it_mdcr1      TYPE STANDARD TABLE OF ty_mdcr WITH HEADER LINE,
+      wa_mdcr1      TYPE ty_mdcr,
+      it_mat        TYPE STANDARD TABLE OF ty_mat WITH HEADER LINE,
+      wa_mat        TYPE ty_mat,
+      it_mat2       TYPE STANDARD TABLE OF ty_mat WITH HEADER LINE,
+      wa_mat2       TYPE ty_mat,
+      it_hmigo      TYPE STANDARD TABLE OF ty_hmigo WITH HEADER LINE,
+      wa_hmigo      TYPE ty_hmigo,
+      it_hmigo2     TYPE STANDARD TABLE OF ty_hmigo2 WITH HEADER LINE,
+      wa_hmigo2     TYPE ty_hmigo2,
+*      gt_mat_ret    TYPE STANDARD TABLE OF ty_mdc WITH HEADER LINE, "20200915 - Updated by PB-AB (Exclude Cancelled Matdoc Return) Req by Mas Ridho
+
+
+
+*       =========================================================================END OF DATA CMT Movement==========================================================
+*       ==========================================================================Begin Of Data Scrap=====================================================
+*       Req By Mbk Riya 310820
+      it_scrap      TYPE STANDARD TABLE OF ty_scrap,
+      wa_scrap      TYPE ty_scrap,
+      it_scrapdtl   TYPE STANDARD TABLE OF ty_scrapdtl,
+      wa_scrapdtl   TYPE ty_scrapdtl,
+      it_scrapdtl_d TYPE STANDARD TABLE OF ty_scrapdtl,
+      wa_scrapdtl_d TYPE ty_scrapdtl,
+      it_kkk        TYPE STANDARD TABLE OF ty_kkk WITH HEADER LINE,
+      wa_kkk        TYPE ty_kkk,
+      it_doc        TYPE STANDARD TABLE OF ty_doc WITH HEADER LINE,
+      wa_doc        TYPE ty_doc,
+      it_doc2       TYPE STANDARD TABLE OF ty_doc WITH HEADER LINE,
+      wa_doc2       TYPE ty_doc,
+      it_migo       TYPE STANDARD TABLE OF ty_migo WITH HEADER LINE,
+      wa_migo       TYPE ty_migo,
+      it_vnd        TYPE STANDARD TABLE OF ty_vnd WITH HEADER LINE,
+      wa_vnd        TYPE ty_vnd,
+      it_sub        TYPE STANDARD TABLE OF ty_sub WITH HEADER LINE,
+      wa_sub        TYPE ty_sub,
+
+
+
+*      *STANDARD LAYOUT OF SAP ALV
+      gw_layout     TYPE slis_layout_alv,
+      gt_cat        TYPE slis_t_fieldcat_alv,
+      gw_cat        TYPE slis_fieldcat_alv,
+      gt_event      TYPE slis_t_event,
+      gw_event      TYPE slis_alv_event,
+      gt_sort       TYPE slis_t_sortinfo_alv,
+      gw_sort       TYPE slis_sortinfo_alv,
+      v_report      TYPE c.
+
+" data for Header Page
+
+CLASS lcl_handle_events DEFINITION DEFERRED.
+DATA:
+  gr_table  TYPE REF TO cl_salv_table,
+  gr_events TYPE REF TO lcl_handle_events.
+" end of data header Page
+
+
+SELECTION-SCREEN BEGIN OF BLOCK a WITH FRAME TITLE TEXT-002.
+PARAMETERS :
+  p_rad1 RADIOBUTTON GROUP rad DEFAULT 'X',   " CMT"
+  p_rad2 RADIOBUTTON GROUP rad,              " Secondary"
+  p_rad3 RADIOBUTTON GROUP rad,              " CMT MVT
+  p_rad4 RADIOBUTTON GROUP rad.               " Scrap
+SELECTION-SCREEN END OF BLOCK a.
+
+SELECTION-SCREEN BEGIN OF BLOCK a1 WITH FRAME TITLE TEXT-001.
+SELECT-OPTIONS: s_werks   FOR zmmtb_ks_hdr-werks NO INTERVALS NO-EXTENSION OBLIGATORY,
+                s_zkk     FOR zmmtb_kk_kp-zkk,
+                s_zkp     FOR zmmtb_kk_kp-zkp,
+                s_zks     FOR zmmtb_ks_hdr-zks,
+                s_zkkbc   FOR zmmtb_ks_hdr-zkkbc,
+                s_zstyle  FOR zmmtb_kk_kp-zstyle NO INTERVALS NO-EXTENSION,
+                s_zname   FOR lfa1-lifnr NO INTERVALS NO-EXTENSION.
+
+SELECTION-SCREEN END OF BLOCK a1.
+
+
+
+
+
+
+CLASS lcl_handle_events DEFINITION.
+  PUBLIC SECTION.
+    METHODS:
+
+      on_double_click FOR EVENT double_click OF cl_salv_events_table
+        IMPORTING row column,
+* class for header (top page)
+      top_of_page FOR EVENT top_of_page OF cl_salv_events_table
+        IMPORTING r_top_of_page page table_index.
+ENDCLASS. "lcl_handle_events DEFINITION
+DATA: event_handler TYPE REF TO lcl_handle_events.
+
+START-OF-SELECTION.
+*Start of CMT screen
+  IF p_rad1 = 'X'.
+    PERFORM get_data.
+    PERFORM proses_data.
+    PERFORM f_display_data.
+* Star of Secondary Scree
+  ELSEIF p_rad2 = 'X'.
+    PERFORM get_data2.
+    PERFORM proses_data2.
+    PERFORM f_display_data2.
+  ELSEIF p_rad3 = 'X'.
+    PERFORM get_data3.
+    PERFORM proses_data3.
+    PERFORM f_display_data3.
+  ELSE.
+    PERFORM get_data4.
+    PERFORM proses_data4.
+    PERFORM f_display_data4.
+  ENDIF.
+
+
+
+
+*========================================================================================Begin on CMT Report=====================================================================
+FORM get_data.
+
+  DATA : zkk1 TYPE c LENGTH 25,
+         week TYPE scal-week.
+
+  SELECT k~zkk, k~zstyle, k~zqty, k~zkp, k~zqtysnd, k~zqty_panel INTO TABLE @it_zkkkp
+    FROM zmmtb_kk_kp AS k
+    INNER JOIN zmmtb_kk_hdr AS s ON s~zkk = k~zkk
+    LEFT OUTER JOIN zmmtb_ks_hdr AS r ON s~zkk = r~zkk
+    WHERE k~zkk IN @s_zkk AND ( k~zkk like 'G%' ) and " Updated by PB-FT06 validation only KK Garment Req By Mbk Rya 141020
+          k~zstyle IN @s_zstyle AND
+          k~zkp IN @s_zkp AND
+          s~werks IN @s_werks AND k~zqtysnd > 0 AND
+          s~zname1v IN @s_zname AND
+          r~zks IN @s_zks AND
+          r~zkkbc IN @s_zkkbc.
+
+
+  IF it_zkkkp[] IS NOT INITIAL.
+
+    SELECT h~zkk h~zks h~zkkbc h~werks k~zkp INTO TABLE it_kshdr
+      FROM zmmtb_ks_hdr AS h INNER JOIN zmmtb_ks_kp AS k ON h~zks = k~zks
+      FOR ALL ENTRIES IN it_zkkkp
+      WHERE h~zkk = it_zkkkp-zkk.
+*     and h~zks in s_zks
+*     and h~zkkbc in s_zkkbc.
+
+
+
+    SELECT zkk zname1v zkkpo INTO TABLE it_kkhdr
+      FROM zmmtb_kk_hdr
+      FOR ALL ENTRIES IN it_zkkkp
+      WHERE zkk = it_zkkkp-zkk.
+
+    SELECT e~ebeln e~ebelp e~txz01 INTO TABLE it_ekpo
+      FROM ekpo AS e
+      INNER JOIN zmmtb_kk_hdr AS h ON e~ebeln = h~zkkpo
+      INNER JOIN zmmtb_kk_kp AS k ON e~txz01 = k~zstyle
+      FOR ALL ENTRIES IN it_kkhdr
+      WHERE e~ebeln = it_kkhdr-zkkpo.
+
+
+
+    LOOP AT it_zkkkp.
+
+      wa_zkk-zkk     = it_zkkkp-zkk.
+      wa_zkk-zstyle  = it_zkkkp-zstyle.
+
+      APPEND wa_zkk TO it_zkk.
+    ENDLOOP.
+    CLEAR wa_zkk.
+
+    SELECT m~bktxt m~erfmg m~mblnr m~xblnr m~budat m~bwart m~cancelled m~ebeln m~ebelp m~matnr m~mat_kdauf m~meins
+      h~zbctype h~zbcdoc h~zbcdate
+      INTO TABLE it_matdoc2 " QTY GR SJ
+      FROM matdoc AS m
+      left outer join zmmtb_hmigo AS h ON m~mblnr = h~mblnr            " Updated by PB-FT06 change type of JOin req by mbk RYa 250920
+      FOR ALL ENTRIES IN it_zkk
+      WHERE m~bktxt = it_zkk-zkk  AND ( m~bwart = '919' OR m~bwart = '101' ) AND m~cancelled =' ' .
+
+
+
+
+
+    LOOP AT it_matdoc2 INTO wa_matdoc2.
+      CALL FUNCTION 'DATE_GET_WEEK'
+        EXPORTING
+          date         = wa_matdoc2-budat
+        IMPORTING
+          week         = week
+        EXCEPTIONS
+          date_invalid = 1
+          OTHERS       = 2.
+      wa_matdoc2-week = week+4(2).
+      MODIFY it_matdoc2 FROM wa_matdoc2.
+    ENDLOOP.
+    CLEAR wa_matdoc2.
+
+
+    SELECT m~ebelp m~ebeln k~zstyle m~bwart m~erfmg m~cancelled m~budat m~bktxt m~xblnr m~mblnr INTO TABLE it_gr  " QTY GR ACT
+       FROM matdoc AS m
+       INNER JOIN ekpo AS e ON m~ebelp = e~ebelp AND m~ebeln = e~ebeln
+       INNER JOIN zmmtb_kk_kp AS k ON e~txz01 = k~zstyle
+       FOR ALL ENTRIES IN it_ekpo
+       WHERE m~ebeln = it_ekpo-ebeln AND m~ebelp = it_ekpo-ebelp  AND bwart = '101'  AND cancelled =' ' .
+
+
+
+    LOOP AT it_gr INTO wa_gr.
+      CALL FUNCTION 'DATE_GET_WEEK'
+        EXPORTING
+          date         = wa_gr-budat
+        IMPORTING
+          week         = week
+        EXCEPTIONS
+          date_invalid = 1
+          OTHERS       = 2.
+      wa_gr-week = week+4(2).
+      MODIFY it_gr FROM wa_gr.
+    ENDLOOP.
+    CLEAR wa_gr.
+
+
+    SELECT lifnr name1 INTO TABLE it_lfa1
+      FROM lfa1
+      FOR ALL ENTRIES IN it_kkhdr
+      WHERE lifnr = it_kkhdr-zname1v.
+  ENDIF.
+
+
+ENDFORM.
+
+
+FORM proses_data.
+
+  DATA : qtygr TYPE p DECIMALS 2,
+         qtysj TYPE p DECIMALS 2.
+
+
+  SORT it_gr BY bktxt ebeln bwart week.
+  LOOP AT it_gr INTO wa_gr.
+    wa_gr1-zstyle = wa_gr-zstyle.
+    wa_gr1-bktxt  = wa_gr-bktxt.
+    wa_gr1-bwart  = wa_gr-bwart.
+    wa_gr1-erfmg  = wa_gr-erfmg.
+    wa_gr1-week   = wa_gr-week.
+    wa_gr1-ebeln  = wa_gr-ebeln.
+    COLLECT wa_gr1 INTO it_gr1.
+  ENDLOOP.
+  CLEAR wa_gr1.
+
+
+  SORT it_matdoc2 BY bktxt bwart budat.
+  LOOP AT it_matdoc2 INTO wa_matdoc2.
+    wa_matdoc9-matnr      = wa_matdoc2-matnr.
+    wa_matdoc9-bktxt      = wa_matdoc2-bktxt.
+    wa_matdoc9-bwart      = wa_matdoc2-bwart.
+    wa_matdoc9-week       = wa_matdoc2-week.
+    wa_matdoc9-erfmg      = wa_matdoc2-erfmg.
+    wa_matdoc9-mat_kdauf  = wa_matdoc2-mat_kdauf.
+    COLLECT wa_matdoc9 INTO it_matdoc9.
+  ENDLOOP.
+  CLEAR wa_matdoc9.
+
+
+
+  LOOP AT it_zkkkp INTO wa_zkkkp.
+
+    CLEAR wa_report2.
+    CLEAR wa_report.
+
+
+
+    wa_report-zkk     = wa_zkkkp-zkk.
+*  wa_report2-zkk    = wa_zkkkp-zkk. "REPORT2
+    wa_report-zstyle  = wa_zkkkp-zstyle.
+*  wa_report2-zstyle = wa_zkkkp-zstyle. " REPORT2
+    wa_report-zkp     = wa_zkkkp-zkp.
+    IF wa_zkkkp-zqty_panel EQ ' '.
+      wa_report-zqty    = wa_zkkkp-zqtysnd.
+    ELSE.
+      wa_report-zqty    = wa_zkkkp-zqtysnd * wa_zkkkp-zqty_panel.
+    ENDIF.
+
+
+    READ TABLE it_kshdr INTO wa_kshdr WITH KEY zkk = wa_zkkkp-zkk.
+    IF sy-subrc EQ 0.
+      wa_report-zks   = wa_kshdr-zks.
+      wa_report-zkkbc = wa_kshdr-zkkbc.
+    ENDIF.
+
+    READ TABLE it_kkhdr INTO wa_kkhdr WITH KEY zkk = wa_zkkkp-zkk.
+    IF sy-subrc EQ 0.
+      wa_report-zkkpo = wa_kkhdr-zkkpo.
+    ENDIF.
+
+    READ TABLE it_lfa1 INTO wa_lfa1 WITH KEY lifnr = wa_kkhdr-zname1v.
+    IF sy-subrc EQ 0.
+      wa_report-zname1v = wa_lfa1-name1.
+    ENDIF.
+
+    READ TABLE it_zkk INTO wa_zkk WITH KEY zkk = wa_zkkkp-zkk.
+
+    LOOP AT  it_matdoc9 INTO wa_matdoc9 WHERE bktxt = wa_zkkkp-zkk AND matnr = wa_zkkkp-zstyle AND mat_kdauf = wa_zkkkp-zkp.
+      qtysj = qtysj + wa_matdoc9-erfmg.
+      CASE wa_matdoc9-week.
+        WHEN '000001'.
+          wa_report-week1sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK1SJ'.
+        WHEN '000002'.
+          wa_report-week2sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK2SJ'.
+        WHEN '000003'.
+          wa_report-week3sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK3SJ'.
+        WHEN '000004'.
+          wa_report-week4sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK4SJ'.
+        WHEN '000005'.
+          wa_report-week5sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK5SJ'.
+        WHEN '000006'.
+          wa_report-week6sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK6SJ'.
+        WHEN '000007'.
+          wa_report-week7sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK7SJ'.
+        WHEN '000008'.
+          wa_report-week8sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK8SJ'.
+        WHEN '000009'.
+          wa_report-week9sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK9SJ'.
+        WHEN '000010'.
+          wa_report-week10sj = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK10SJ'.
+        WHEN '000011'.
+          wa_report-week11sj = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK11SJ'.
+        WHEN '000012'.
+          wa_report-week12sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK12SJ'.
+        WHEN '000013'.
+          wa_report-week13sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK13SJ'.
+        WHEN '000014'.
+          wa_report-week14sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK14SJ'.
+        WHEN '000015'.
+          wa_report-week15sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK15SJ'.
+        WHEN '000016'.
+          wa_report-week16sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK16SJ'.
+        WHEN '000017'.
+          wa_report-week17sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK17SJ'.
+        WHEN '000018'.
+          wa_report-week18sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK18SJ'.
+        WHEN '000019'.
+          wa_report-week19sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK19SJ'.
+        WHEN '000020'.
+          wa_report-week20sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK20SJ'.
+        WHEN '000021'.
+          wa_report-week21sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK21SJ'.
+        WHEN '000022'.
+          wa_report-week22sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK22SJ'.
+        WHEN '000023'.
+          wa_report-week23sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK23SJ'.
+        WHEN '000024'.
+          wa_report-week24sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK24SJ'.
+        WHEN '000025'.
+          wa_report-week25sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK25SJ'.
+        WHEN '000026'.
+          wa_report-week26sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK26SJ'.
+        WHEN '000027'.
+          wa_report-week27sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK27SJ'.
+        WHEN '000028'.
+          wa_report-week28sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK28SJ'.
+        WHEN '000029'.
+          wa_report-week29sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK29SJ'.
+        WHEN '000030'.
+          wa_report-week30sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK30SJ'.
+        WHEN '000031'.
+          wa_report-week31sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK31SJ'.
+        WHEN '000032'.
+          wa_report-week32sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK32SJ'.
+        WHEN '000033'.
+          wa_report-week33sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK33SJ'.
+        WHEN '000034'.
+          wa_report-week34sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK34SJ'.
+        WHEN '000035'.
+          wa_report-week35sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK35SJ'.
+        WHEN '000036'.
+          wa_report-week36sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK36SJ'.
+        WHEN '000037'.
+          wa_report-week37sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK37SJ'.
+        WHEN '000038'.
+          wa_report-week38sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK38SJ'.
+        WHEN '000039'.
+          wa_report-week39sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK39SJ'.
+        WHEN '000040'.
+          wa_report-week40sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK40SJ'.
+        WHEN '000041'.
+          wa_report-week41sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK41SJ'.
+        WHEN '000042'.
+          wa_report-week42sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK42SJ'.
+        WHEN '000043'.
+          wa_report-week43sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK43SJ'.
+        WHEN '000044'.
+          wa_report-week44sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK44SJ'.
+        WHEN '000045'.
+          wa_report-week45sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK45SJ'.
+        WHEN '000046'.
+          wa_report-week46sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK46SJ'.
+        WHEN '000047'.
+          wa_report-week47sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK47SJ'.
+        WHEN '000048'.
+          wa_report-week48sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK48SJ'.
+        WHEN '000049'.
+          wa_report-week49sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK49SJ'.
+        WHEN '000050'.
+          wa_report-week50sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK50SJ'.
+        WHEN '000051'.
+          wa_report-week51sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK51SJ'.
+        WHEN '000052'.
+          wa_report-week52sj  = wa_matdoc9-erfmg.
+          wa_hide-week       =  'WEEK52SJ'.
+      ENDCASE.
+
+      APPEND wa_hide TO it_hide.
+    ENDLOOP.
+    wa_report-qtysj = qtysj.
+    CLEAR qtysj.
+
+
+
+    LOOP AT it_gr1 INTO wa_gr1 WHERE bktxt = wa_zkkkp-zkk AND zstyle = wa_zkkkp-zstyle AND ebeln = wa_kkhdr-zkkpo.
+*  IF SY-SUBRC EQ 0.
+      qtygr = qtygr + wa_gr1-erfmg.
+      CASE wa_gr1-week.
+        WHEN '000001'.
+          wa_report-week1gr   = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK1GR'.
+        WHEN '000002'.
+          wa_report-week2gr   = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK2GR'.
+        WHEN '000003'.
+          wa_report-week3gr   = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK3GR'.
+        WHEN '000004'.
+          wa_report-week4gr   = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK4GR'.
+        WHEN '000005'.
+          wa_report-week5gr   = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK5GR'.
+        WHEN '000006'.
+          wa_report-week6gr   = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK6GR'.
+        WHEN '000007'.
+          wa_report-week7gr   = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK7GR'.
+        WHEN '000008'.
+          wa_report-week8gr   = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK8GR'.
+        WHEN '000009'.
+          wa_report-week9gr   = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK9GR'.
+        WHEN '000010'.
+          wa_report-week10gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK10GR'.
+        WHEN '000011'.
+          wa_report-week11gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK11GR'.
+        WHEN '000012'.
+          wa_report-week12gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK12GR'.
+        WHEN '000013'.
+          wa_report-week13gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK13GR'.
+        WHEN '000014'.
+          wa_report-week14gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK14GR'.
+        WHEN '000015'.
+          wa_report-week15gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK15GR'.
+        WHEN '000016'.
+          wa_report-week16gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK16GR'.
+        WHEN '000017'.
+          wa_report-week17gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK17GR'.
+        WHEN '000018'.
+          wa_report-week18gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK18GR'.
+        WHEN '000019'.
+          wa_report-week19gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK19GR'.
+        WHEN '000020'.
+          wa_report-week20gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK20GR'.
+        WHEN '000021'.
+          wa_report-week21gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK21GR'.
+        WHEN '000022'.
+          wa_report-week22gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK22GR'.
+        WHEN '000023'.
+          wa_report-week23gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK23GR'.
+        WHEN '000024'.
+          wa_report-week24gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK24GR'.
+        WHEN '000025'.
+          wa_report-week25gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK25GR'.
+        WHEN '000026'.
+          wa_report-week26gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK26GR'.
+        WHEN '000027'.
+          wa_report-week27gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK27GR'.
+        WHEN '000028'.
+          wa_report-week28gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK28GR'.
+        WHEN '000029'.
+          wa_report-week29gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK29GR'.
+        WHEN '000030'.
+          wa_report-week30gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK30GR'.
+        WHEN '000031'.
+          wa_report-week31gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK31GR'.
+        WHEN '000032'.
+          wa_report-week32gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK32GR'.
+        WHEN '000033'.
+          wa_report-week33gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK33GR'.
+        WHEN '000034'.
+          wa_report-week34gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK34GR'.
+        WHEN '000035'.
+          wa_report-week35gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK35GR'.
+        WHEN '000036'.
+          wa_report-week36gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK36GR'.
+        WHEN '000037'.
+          wa_report-week37gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK37GR'.
+        WHEN '000038'.
+          wa_report-week38gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK38GR'.
+        WHEN '000039'.
+          wa_report-week39gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK39GR'.
+        WHEN '000040'.
+          wa_report-week40gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK40GR'.
+        WHEN '000041'.
+          wa_report-week41gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK41GR'.
+        WHEN '000042'.
+          wa_report-week42gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK42GR'.
+        WHEN '000043'.
+          wa_report-week43gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK43GR'.
+        WHEN '000044'.
+          wa_report-week44gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK44GR'.
+        WHEN '000045'.
+          wa_report-week45gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK45GR'.
+        WHEN '000046'.
+          wa_report-week46gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK46GR'.
+        WHEN '000047'.
+          wa_report-week47gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK47GR'.
+        WHEN '000048'.
+          wa_report-week48gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK48GR'.
+        WHEN '000049'.
+          wa_report-week49gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK49GR'.
+        WHEN '000050'.
+          wa_report-week50gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK50GR'.
+        WHEN '000051'.
+          wa_report-week51gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK51GR'.
+        WHEN '000052'.
+          wa_report-week52gr  = wa_gr1-erfmg.
+          wa_hide-week       =  'WEEK52GR'.
+      ENDCASE.
+
+      APPEND wa_hide TO it_hide.
+    ENDLOOP.
+
+    wa_report-bal    = wa_report-zqty - qtygr.
+    wa_report-qtygr  = qtygr.
+    CLEAR qtygr.
+
+    APPEND wa_report TO it_report.
+  ENDLOOP.
+  CLEAR wa_report.
+  DELETE ADJACENT DUPLICATES FROM it_hide.
+
+
+  LOOP AT it_matdoc2 INTO wa_matdoc2.
+    wa_report2-xblnr = wa_matdoc2-xblnr.
+    wa_report2-qtysj = wa_matdoc2-erfmg.
+    wa_report2-mdsj  = wa_matdoc2-mblnr.
+    wa_report2-zstyle = wa_matdoc2-matnr.
+    wa_report2-zkk    = wa_matdoc2-bktxt.
+    wa_report2-budat  = wa_matdoc2-budat.
+    wa_report2-zbctype = wa_matdoc2-zbctype.
+    wa_report2-zbcdoc  = wa_matdoc2-zbcdoc.
+    wa_report2-zbcdate = wa_matdoc2-zbcdate.
+    wa_report2-meins   = wa_matdoc2-meins.
+
+    LOOP AT it_gr INTO wa_gr WHERE bktxt = wa_matdoc2-bktxt AND zstyle = wa_matdoc2-matnr AND xblnr = wa_matdoc2-xblnr.
+      wa_report2-qtygr = wa_gr-erfmg.
+      wa_report2-mdgr  = wa_gr-mblnr.
+
+    ENDLOOP.
+    APPEND wa_report2 TO it_report2.
+    CLEAR wa_matdoc2.
+    CLEAR wa_gr.
+    CLEAR wa_report2.
+  ENDLOOP.
+
+
+
+ENDFORM.
+
+
+
+CLASS lcl_handle_events IMPLEMENTATION.
+
+  METHOD on_double_click.
+*  ----------------------------------------------------- Begin of Double Click On CMT Report----------------------------------------------------------------
+    IF p_rad1 = 'X'.
+      v_report = 'X'.
+      REFRESH it_report2_d.
+      IF column <> ''.
+
+        READ TABLE it_report INTO wa_report INDEX row.
+
+        LOOP AT it_report2 INTO wa_report2 WHERE zkk = wa_report-zkk
+                                                 AND zstyle = wa_report-zstyle.
+          APPEND wa_report2 TO it_report2_d.
+        ENDLOOP.
+        PERFORM f_display_data.
+      ENDIF.
+*   -------------------------------------------------End Of Double Click on CMT Report--------------------------------------------------------------
+*   ------------------------------------------------- Begin of Double Click on Secondary Report-----------------------------------------------------
+    ELSEIF p_rad2 = 'X'.
+      REFRESH it_gi_d.
+      REFRESH it_gr2_d.
+* get data fabric
+      IF column = 'QTYGI'.
+        v_report = '1'.
+        READ TABLE it_report_2nd INTO wa_report_2nd INDEX row.
+
+        LOOP AT it_gi INTO wa_gi WHERE zkk = wa_report_2nd-zkk.
+
+          APPEND wa_gi TO it_gi_d.
+        ENDLOOP.
+        PERFORM f_display_data2.
+        CLEAR v_report.
+*   ENDIF.
+      ELSEIF column = 'QTYGR'.
+        v_report = '2'.
+        READ TABLE it_report_2nd INTO wa_report_2nd INDEX row.
+
+        LOOP AT it_gr2 INTO wa_gr2 WHERE zkkpo = wa_report_2nd-zkkpo.
+
+          APPEND wa_gr2 TO it_gr2_d.
+        ENDLOOP.
+        PERFORM f_display_data2.
+
+      ENDIF.
+*---------------------------------------------------------End Of Double Click on Secondary Report------------------------------------------------------
+* ---------------------------------------------------------begin of displaying cmt mvt--------------------------------------------------------------------------
+    ELSEIF p_rad3 = 'X'.
+*     v_report = 'X'.
+      REFRESH it_pgirp_d.
+      REFRESH it_grpodtl_d.
+      REFRESH it_sjdtl_d.
+      IF column = 'ZKS'.
+        v_report = '1'.
+        READ TABLE it_cmtrp INTO wa_cmtrp INDEX row.
+        LOOP AT it_pgirp INTO wa_pgirp WHERE zkksub = wa_cmtrp-zks.
+          APPEND wa_pgirp TO it_pgirp_d.
+        ENDLOOP.
+        PERFORM f_display_data3.
+
+      ELSEIF column = 'ERFMG'.
+        v_report = '2'.
+        READ TABLE it_cmtrp INTO wa_cmtrp INDEX row.
+        LOOP AT it_grpodtl INTO wa_grpodtl WHERE ebeln = wa_cmtrp-zkkpo.
+          APPEND wa_grpodtl TO it_grpodtl_d.
+        ENDLOOP.
+        PERFORM f_display_data3.
+
+      ELSEIF column = 'QTYSJ'.
+        v_report = '3'.
+        READ TABLE it_cmtrp INTO wa_cmtrp INDEX row.
+        LOOP AT it_sjdtl INTO wa_sjdtl WHERE bktxt = wa_cmtrp-zkk.
+          APPEND wa_sjdtl TO it_sjdtl_d.
+        ENDLOOP.
+        PERFORM f_display_data3.
+
+      ENDIF.
+*-----------------------------------------------------------end of displaying cmt mvt----------------------------------------------------------------------------
+*---------------------------------------------------------------Begin Of Displaying Scrap Report-------------------------------------------------------------------
+
+    ELSEIF p_rad4 = 'X'.
+      v_report = 'X'.
+      REFRESH it_scrapdtl_d.
+      IF column = 'MENGE'.
+
+        READ TABLE it_scrap INTO wa_scrap INDEX row.
+
+        LOOP AT it_scrapdtl INTO wa_scrapdtl WHERE bktxt = wa_scrap-zks.
+
+          APPEND wa_scrapdtl TO it_scrapdtl_d.
+        ENDLOOP.
+        PERFORM f_display_data4.
+      ENDIF.
+
+
+    ENDIF.
+    CLEAR v_report.
+
+  ENDMETHOD.
+
+*  Header (top of page) implementation
+  METHOD top_of_page.
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+
+FORM f_display_data .
+  DATA: lo_alv       TYPE REF TO cl_salv_table,
+        lx_msg       TYPE REF TO cx_salv_msg,
+        ls_msg       TYPE bal_s_msg,
+        lo_functions TYPE REF TO cl_salv_functions_list,
+        lo_layout    TYPE REF TO cl_salv_layout,
+        ls_key       TYPE salv_s_layout_key,
+        lo_display   TYPE REF TO cl_salv_display_settings,
+        lo_selection TYPE REF TO cl_salv_selections,
+        lo_column    TYPE REF TO cl_salv_column_table,
+        lo_columns   TYPE REF TO cl_salv_columns_table.
+
+*Data for top of page
+  DATA: lr_content TYPE REF TO cl_salv_form_element.
+
+  DATA: lo_events TYPE REF TO cl_salv_events_table.
+  IF v_report = ' '.
+    TRY.
+        cl_salv_table=>factory( IMPORTING r_salv_table = lo_alv
+                                CHANGING  t_table      = it_report ).
+*Display header (top of page)
+        PERFORM built_header  CHANGING lr_content.
+        lo_alv->set_top_of_list( lr_content ).
+        DATA: lr_events TYPE REF TO cl_salv_events_table.
+        lr_events = lo_alv->get_event( ).
+        CREATE OBJECT gr_events.
+        SET HANDLER gr_events->top_of_page FOR lr_events.
+*  lo_alv->display( ).
+
+      CATCH cx_salv_msg INTO lx_msg .
+        ls_msg = lx_msg->get_message( ).
+        MESSAGE ID ls_msg-msgid TYPE 'S' NUMBER ls_msg-msgno
+          WITH ls_msg-msgv1 ls_msg-msgv2 ls_msg-msgv3 ls_msg-msgv4
+          DISPLAY LIKE 'E'.
+        LEAVE LIST-PROCESSING.
+
+
+    ENDTRY.
+  ELSE.
+    TRY.
+        cl_salv_table=>factory( IMPORTING r_salv_table = lo_alv
+                                CHANGING  t_table      = it_report2_d ).
+      CATCH cx_salv_msg INTO lx_msg .
+        ls_msg = lx_msg->get_message( ).
+        MESSAGE ID ls_msg-msgid TYPE 'S' NUMBER ls_msg-msgno
+          WITH ls_msg-msgv1 ls_msg-msgv2 ls_msg-msgv3 ls_msg-msgv4
+          DISPLAY LIKE 'E'.
+        LEAVE LIST-PROCESSING.
+    ENDTRY.
+  ENDIF.
+  lo_functions = lo_alv->get_functions( ).
+  lo_functions->set_all( abap_true ).
+
+  "enable control layout
+  ls_key-report = sy-repid.
+  lo_layout = lo_alv->get_layout( ).
+  lo_layout->set_key( ls_key ).
+  lo_layout->set_default( abap_true ).
+  lo_layout->set_save_restriction( cl_salv_layout=>restrict_none ).
+
+
+  "config stripped display
+  lo_display = lo_alv->get_display_settings( ).
+  lo_display->set_striped_pattern( cl_salv_display_settings=>true ).
+
+  "multi rows selection
+  lo_selection = lo_alv->get_selections( ).
+  lo_selection->set_selection_mode( if_salv_c_selection_mode=>multiple ).
+
+  "optimize columns width
+  lo_columns = lo_alv->get_columns( ).
+  lo_columns->set_optimize( ).
+
+  FIELD-SYMBOLS : <field> TYPE any.
+
+
+  PERFORM f_custom_columns CHANGING lo_columns.
+
+*// 2. Set the Color Column to the ALV
+
+* additional double click
+  lo_events = lo_alv->get_event( ).
+  CREATE OBJECT event_handler.
+  SET HANDLER event_handler->on_double_click FOR lo_events.
+
+  lo_alv->display( ).
+
+
+ENDFORM.
+
+
+FORM built_header CHANGING cr_content TYPE REF TO cl_salv_form_element.
+  DATA: lr_grid   TYPE REF TO cl_salv_form_layout_grid,
+        lr_grid_1 TYPE REF TO cl_salv_form_layout_grid,
+        lr_label  TYPE REF TO cl_salv_form_label,
+        lr_text   TYPE REF TO cl_salv_form_text,
+        l_text    TYPE string,
+        date(60)  TYPE c.
+  CONCATENATE sy-datum+6(2)
+              sy-datum+4(2)
+              sy-datum(4) INTO date
+              SEPARATED BY '.'.
+  CREATE OBJECT lr_grid.
+  l_text = 'Report KK CMT' .
+  lr_grid->create_header_information(
+    row    = 1
+    column = 1
+    text    = l_text
+    tooltip = l_text ).
+  lr_grid->add_row( ).
+  lr_grid_1 = lr_grid->create_grid(
+                row    = 3
+                column = 1 ).
+  lr_label = lr_grid_1->create_label(
+    row     = 1
+    column  = 1
+    text    = 'Operation'
+    tooltip = 'Operation' ).
+  lr_text = lr_grid_1->create_text(
+    row     = 1
+    column  = 2
+    text    = 'Double Click on KK Master to show details'
+    tooltip = 'Double Click on KK Master to show details' ).
+  lr_label->set_label_for( lr_text ).
+  lr_label = lr_grid_1->create_label(
+    row    = 2
+    column = 1
+    text    = 'Date'
+    tooltip = 'Date' ).
+*  l_text = 'today'.
+  lr_text = lr_grid_1->create_text(
+    row    = 2
+    column = 2
+    text    = date
+    tooltip = date ).
+  lr_label->set_label_for( lr_text ).
+  cr_content = lr_grid.
+ENDFORM.                    " built_header
+
+
+
+*&---------------------------------------------------------------------*
+*& Form F_HIDE_COLUMNS
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      <--P_LO_COLUMNS  text
+*&---------------------------------------------------------------------*
+FORM f_custom_columns CHANGING co_columns TYPE REF TO cl_salv_columns_table.
+
+  DATA: lo_column  TYPE REF TO cl_salv_column_table.
+
+  DEFINE m_set_visible.
+    lo_column ?= co_columns->get_column( &1 ).
+    lo_column->set_visible( value = &2 ).
+  END-OF-DEFINITION.
+
+  DEFINE m_set_text.
+    lo_column ?= co_columns->get_column( &1 ).
+    lo_column->set_short_text( &2 ).
+    lo_column->set_medium_text( &2 ).
+    lo_column->set_long_text( &2 ).
+  END-OF-DEFINITION.
+
+
+
+  IF v_report = ' '.
+    m_set_text 'ZKK' 'KK Master'.
+    m_set_text 'ZKS' 'KK Sub'.
+    m_set_text 'ZKKBC' 'KKBC'.
+    m_set_text 'ZKP' 'KP No'.
+    m_set_text 'ZKKPO' 'PO No'.
+    m_set_text 'ZNAME1V' 'Vendor'.
+    m_set_text 'ZSTYLE' 'Material'.
+    m_set_text 'ZQTY' 'QTY KK'.
+    m_set_text 'QTYSJ' 'QTY SJ'.
+    m_set_text 'QTYGR' 'QTY GR'.
+    m_set_text 'BAL' 'Balance GR'.
+    m_set_text  'WEEK1SJ' 'SJ WK1'.
+    m_set_text  'WEEK1GR' 'ACT WK1.'.
+    m_set_text  'WEEK2SJ' 'SJ WK2'.
+    m_set_text  'WEEK2GR' 'ACT WK2'.
+    m_set_text  'WEEK3SJ' 'SJ WK3'.
+    m_set_text  'WEEK3GR' 'ACT WK3'.
+    m_set_text  'WEEK4SJ' 'SJ WK4'.
+    m_set_text  'WEEK4GR' 'ACT WK4'.
+    m_set_text  'WEEK5SJ' 'SJ WK5'.
+    m_set_text  'WEEK5GR' 'ACT WK5'.
+    m_set_text  'WEEK6SJ' 'SJ WK6'.
+    m_set_text  'WEEK6GR' 'ACT WK6'.
+    m_set_text  'WEEK7SJ' 'SJ WK7'.
+    m_set_text  'WEEK7GR' 'ACT WK7'.
+    m_set_text  'WEEK8SJ' 'SJ WK8'.
+    m_set_text  'WEEK8GR' 'ACT WK8'.
+    m_set_text  'WEEK9SJ' 'SJ WK9'.
+    m_set_text  'WEEK9GR' 'ACT WK9'.
+    m_set_text  'WEEK10SJ' 'SJ WK10'.
+    m_set_text  'WEEK10GR' 'ACT WK10'.
+    m_set_text  'WEEK11SJ' 'SJ WK11'.
+    m_set_text  'WEEK11GR' 'ACT WK11'.
+    m_set_text  'WEEK12SJ' 'SJ WK12'.
+    m_set_text  'WEEK12GR' 'ACT WK12'.
+    m_set_text  'WEEK13SJ' 'SJ WK13'.
+    m_set_text  'WEEK13GR' 'ACT WK13'.
+    m_set_text  'WEEK14SJ' 'SJ WK14'.
+    m_set_text  'WEEK14GR' 'ACT WK14'.
+    m_set_text  'WEEK15SJ' 'SJ WK15'.
+    m_set_text  'WEEK15GR' 'ACT WK15'.
+    m_set_text  'WEEK16SJ' 'SJ WK16'.
+    m_set_text  'WEEK16GR' 'ACT WK16'.
+    m_set_text  'WEEK17SJ' 'SJ WK17'.
+    m_set_text  'WEEK17GR' 'ACT WK17'.
+    m_set_text  'WEEK18SJ' 'SJ WK18'.
+    m_set_text  'WEEK18GR' 'ACT WK18'.
+    m_set_text  'WEEK19SJ' 'SJ WK19'.
+    m_set_text  'WEEK19GR' 'ACT WK19'.
+    m_set_text  'WEEK20SJ' 'SJ WK20'.
+    m_set_text  'WEEK20GR' 'ACT WK20'.
+    m_set_text  'WEEK21SJ' 'SJ WK21'.
+    m_set_text  'WEEK21GR' 'ACT WK21'.
+    m_set_text  'WEEK22SJ' 'SJ WK22'.
+    m_set_text  'WEEK22GR' 'ACT WK22'.
+    m_set_text  'WEEK23SJ' 'SJ WK23'.
+    m_set_text  'WEEK23GR' 'ACT WK23'.
+    m_set_text  'WEEK24SJ' 'SJ WK24'.
+    m_set_text  'WEEK24GR' 'ACT WK24'.
+    m_set_text  'WEEK25SJ' 'SJ WK25'.
+    m_set_text  'WEEK25GR' 'ACT WK25'.
+    m_set_text  'WEEK26SJ' ' SJ WK26'.
+    m_set_text  'WEEK26GR' 'ACT WK26'.
+    m_set_text  'WEEK27SJ' 'SJ WK27'.
+    m_set_text  'WEEK27GR' 'ACT WK27'.
+    m_set_text  'WEEK28SJ' 'SJ WK28'.
+    m_set_text  'WEEK28GR' 'ACT WK28'.
+    m_set_text  'WEEK29SJ' 'SJ WK29'.
+    m_set_text  'WEEK29GR' 'ACT WK29'.
+    m_set_text  'WEEK30SJ' 'SJ WK30'.
+    m_set_text  'WEEK30GR' 'ACT WK30'.
+    m_set_text  'WEEK31SJ' 'SJ WK31'.
+    m_set_text  'WEEK31GR' 'ACT WK31'.
+    m_set_text  'WEEK32SJ' 'SJ WK32'.
+    m_set_text  'WEEK32GR' 'ACT WK32'.
+    m_set_text  'WEEK33SJ' 'SJ WK33'.
+    m_set_text  'WEEK33GR' 'ACT WK33'.
+    m_set_text  'WEEK34SJ' 'SJ WK34'.
+    m_set_text  'WEEK34GR' 'ACT WK34'.
+    m_set_text  'WEEK35SJ' 'SJ WK35'.
+    m_set_text  'WEEK35GR' 'ACT WK35'.
+    m_set_text  'WEEK36SJ' 'SJ WK36'.
+    m_set_text  'WEEK36GR' 'ACT WK36'.
+    m_set_text  'WEEK37SJ' 'SJ WK37'.
+    m_set_text  'WEEK37GR' 'ACT WK37'.
+    m_set_text  'WEEK38SJ' 'SJ WK38'.
+    m_set_text  'WEEK38GR' 'ACT WK38'.
+    m_set_text  'WEEK39SJ' 'SJ WK39'.
+    m_set_text  'WEEK39GR' 'ACT WK39'.
+    m_set_text  'WEEK40SJ' 'SJ WK40'.
+    m_set_text  'WEEK40GR' 'ACT WK40'.
+    m_set_text  'WEEK41SJ' 'SJ WK41'.
+    m_set_text  'WEEK41GR' 'ACT WK41'.
+    m_set_text  'WEEK42SJ' 'SJ WK42'.
+    m_set_text  'WEEK42GR' 'ACT WK42'.
+    m_set_text  'WEEK43SJ' 'SJ WK43'.
+    m_set_text  'WEEK43GR' 'ACT WK43'.
+    m_set_text  'WEEK44SJ' 'SJ WK44'.
+    m_set_text  'WEEK44GR' 'ACT WK44'.
+    m_set_text  'WEEK45SJ' 'SJ WK45'.
+    m_set_text  'WEEK45GR' 'ACT WK45'.
+    m_set_text  'WEEK46SJ' 'SJ WK46'.
+    m_set_text  'WEEK46GR' 'ACT WK46'.
+    m_set_text  'WEEK47SJ' 'SJ WK47'.
+    m_set_text  'WEEK47GR' 'ACT WK47'.
+    m_set_text  'WEEK48SJ' 'SJ WK48'.
+    m_set_text  'WEEK48GR' 'ACT WK48'.
+    m_set_text  'WEEK49SJ' 'SJ WK49'.
+    m_set_text  'WEEK49GR' 'ACT WK49'.
+    m_set_text  'WEEK50SJ' 'SJ WK50'.
+    m_set_text  'WEEK50GR' 'ACT WK50'.
+    m_set_text  'WEEK51SJ' 'SJ WK51'.
+    m_set_text  'WEEK51GR' 'ACT WK51'.
+    m_set_text  'WEEK52SJ' 'SJ WK52'.
+    m_set_text  'WEEK52GR' 'ACT WK52'.
+
+  ELSE.
+    m_set_text 'XBLNR' 'No SJ'.
+    m_set_text 'ZSTYLE' 'Material'.
+    m_set_text 'QTYSJ' 'GR SJ'.
+    m_set_text 'QTYGR' 'GR Actual'.
+    m_set_text 'MDSJ' 'Matdoc SJ'.
+    m_set_text 'MDGR' 'Matdoc Act'.
+    m_set_text 'BUDAT' 'Post.Date'.
+    m_set_text 'MEINS' 'UoM'.
+    m_set_text 'ZBCTYPE' 'BC.TypeSJ'.
+    m_set_text 'ZBCDOC' 'BC.DocSJ'.
+    m_set_text 'ZBCDATE' 'BC.DateSJ'.
+
+
+  ENDIF.
+
+
+  IF v_report = ' '.
+    DATA : kolom      TYPE lvc_fname,
+           lo_columns TYPE REF TO cl_salv_columns_table.
+    wa_colom-week =  'WEEK1SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK1GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK2SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK2GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK3SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK3GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK4SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK4GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK5SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK5GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK6SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK6GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK7SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK7GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK8SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK8GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK9SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK9GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK10SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK10GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK11SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK11GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK12SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK12GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK13SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK13GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK14SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK14GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK15SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK15GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK16SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK16GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK17SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK17GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK18SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK18GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK19SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK19GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK20SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK20GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK21SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK21GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK22SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK22GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK23SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK23GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK24SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK24GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK25SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK25GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK26SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK26GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK27SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK27GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK28SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK28GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK29SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK29GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK30SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK30GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK31SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK31GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK32SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK32GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK33SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK33GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK34SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK34GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK35SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK35GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK36SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK36GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK37SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK37GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK38SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK38GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK39SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK39GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK40SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK40GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK41SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK41GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK42SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK42GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK43SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK43GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK44SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK44GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK45SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK45GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK46SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK46GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK47SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK47GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK48SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK48GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK49SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK49GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK50SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK50GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK51SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK51GR'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK52SJ'.APPEND wa_colom-week TO it_colom.
+    wa_colom-week =  'WEEK52GR'.APPEND wa_colom-week TO it_colom.
+
+
+
+
+    LOOP AT it_colom INTO wa_colom.
+
+      READ TABLE it_hide INTO wa_hide WITH KEY week = wa_colom-week.
+      IF sy-subrc <> 0.
+
+        m_set_visible wa_colom-week ''.
+      ENDIF.
+
+    ENDLOOP.
+  ENDIF.
+
+ENDFORM.
+.
+*&---------------------------------------------------------------------*
+*& Form F_ADJUST_COLTEXT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      -->P_       text
+*      -->P_       text
+*      -->P_       text
+*      <--P_LO_COLUMN  text
+*&---------------------------------------------------------------------*
+FORM f_adjust_coltext  USING    VALUE(p_short)
+                                VALUE(p_medl)
+                       CHANGING p_lo_column TYPE REF TO cl_salv_column_table.
+
+  DATA : lv_short TYPE scrtext_s,
+         lv_medi  TYPE scrtext_m,
+         lv_long  TYPE scrtext_l.
+
+  lv_short = p_short.
+  lv_medi = p_medl.
+  lv_long = p_medl.
+
+  p_lo_column->set_short_text( lv_short ).
+  p_lo_column->set_medium_text( lv_medi ).
+  p_lo_column->set_long_text( lv_long ).
+ENDFORM.
+
+*===================================================================================End Of CMT Report====================================================================
+
+*=====================================================================================Begin Of Secondary Report===========================================================
+
+
+FORM get_data2.
+
+
+  SELECT k~zkk, k~zqty, k~zkp, k~zqtysnd, k~zqty_panel, k~zmm_skk, k~zunit INTO TABLE @it_zkkp_2nd
+    FROM zmmtb_kk_kp AS k
+    INNER JOIN zmmtb_kk_hdr AS s ON s~zkk = k~zkk
+    LEFT OUTER JOIN zmmtb_ks_hdr AS r ON s~zkk = r~zkk
+    WHERE k~zkk IN @s_zkk AND  ( k~zkk like 'S%' ) AND " Updated by PB-FT06 validation only KK Secondary Req By Mbk Rya 141020
+          k~zstyle IN @s_zstyle AND
+          k~zkp IN @s_zkp AND
+          s~werks IN @s_werks AND k~zqtysnd > 0 AND
+          s~zname1v IN @s_zname AND
+          r~zks IN @s_zks AND
+          r~zkkbc IN @s_zkkbc.
+
+  IF it_zkkp_2nd[] IS NOT INITIAL.
+
+*   SELECT k~zkk k~zname1v k~zkkpo k~werks
+*          s~zks s~zkkbc INTO TABLE it_hdr
+*          FROM zmmtb_kk_hdr AS k
+*     INNER JOIN zmmtb_ks_hdr AS s ON k~zkk = s~zkk
+*     FOR ALL ENTRIES IN it_zkkp_2nd WHERE k~zkk = it_zkkp_2nd-zkk.
+
+    SELECT zkk zname1v zkkpo werks INTO TABLE it_hdr
+      FROM zmmtb_kk_hdr
+      FOR ALL ENTRIES IN it_zkkp_2nd WHERE zkk = it_zkkp_2nd-zkk.
+
+    SELECT zkk zks zkkbc INTO TABLE it_ks
+      FROM zmmtb_ks_hdr
+      FOR ALL ENTRIES IN it_zkkp_2nd WHERE zkk = it_zkkp_2nd-zkk.
+
+
+    SELECT z~zkk z~zkp z~matnr z~zstyle z~zqty z~zunit z~mblnr m~budat h~zbctype h~zbcdoc h~zbcdate m~cancelled INTO TABLE it_sj " qty GI
+      FROM zmmtb_sjcmt AS z
+      INNER JOIN matdoc AS m ON z~mblnr = m~mblnr
+      left outer JOIN zmmtb_hmigo AS h ON z~mblnr = h~mblnr " Updated by PB-FT06 change from inner to outer join req by diyah 250920
+      FOR ALL ENTRIES IN it_hdr
+      WHERE z~zkk = it_hdr-zkk
+      and m~cancelled = ' '. "Updated by PB-FT06 exclude when matdoc is cancelled req by Mbk Rya 250920
+
+" Delete row when PO is blank 240920 PB-FT06
+   move it_hdr[] to it_hdr1[].
+   loop at it_hdr1.
+     delete it_hdr1 where zkkpo eq ' '.
+   endloop.
+"end
+
+if it_hdr1[] is not INITIAL.
+    SELECT mblnr matnr erfmg erfme dmbtr waers bwart cancelled ebeln ebelp lgort_sid budat "qty GR
+      INTO TABLE it_matdoc_2nd
+      FROM matdoc
+      FOR ALL ENTRIES IN it_hdr1
+      WHERE ebeln = it_hdr1-zkkpo AND bwart = '101' AND cancelled = ' '.
+
+
+    SELECT  m~mblnr m~xblnr h~zbctype h~zbcdoc h~zbcaju INTO TABLE it_bc
+      FROM mkpf AS m
+      INNER JOIN zmmtb_hmigo AS h ON m~mblnr = h~mblnr
+      FOR ALL ENTRIES IN it_matdoc_2nd
+      WHERE m~mblnr = it_matdoc_2nd-mblnr.
+endif.
+
+
+    SELECT lifnr name1 INTO TABLE it_lfa1
+       FROM lfa1
+       FOR ALL ENTRIES IN it_hdr
+       WHERE lifnr = it_hdr-zname1v.
+
+
+
+  ENDIF.
+
+ENDFORM.
+
+FORM proses_data2.
+
+  SORT it_sj BY zkk zkp.
+  LOOP AT it_sj INTO wa_sj.    " qyt GI
+    wa_qtygi-zkk  = wa_sj-zkk.
+    wa_qtygi-zqty = wa_sj-zqty.
+    wa_qtygi-zkp  = wa_sj-zkp.
+    COLLECT wa_qtygi INTO it_qtygi.
+  ENDLOOP.
+  CLEAR wa_qtygi.
+
+  SORT it_matdoc_2nd BY ebeln.
+  LOOP AT it_matdoc_2nd INTO wa_matdoc_2nd.  " qty GR
+    wa_qtygr-ebeln  = wa_matdoc_2nd-ebeln.
+    wa_qtygr-erfmg  = wa_matdoc_2nd-erfmg.
+    COLLECT wa_qtygr INTO it_qtygr.
+  ENDLOOP.
+  CLEAR wa_qtygr.
+
+  SORT it_zkkp_2nd BY zkk zmm_skk.
+  LOOP AT it_zkkp_2nd INTO wa_zkkp_2nd.
+    wa_zkkp_2nd2-zkk      = wa_zkkp_2nd-zkk.
+    wa_zkkp_2nd2-zkp      = wa_zkkp_2nd-zkp.
+    wa_zkkp_2nd2-zkk      = wa_zkkp_2nd-zkk.
+    wa_zkkp_2nd2-zmm_skk  = wa_zkkp_2nd-zmm_skk.
+    wa_zkkp_2nd2-zunit    = wa_zkkp_2nd-zunit.
+    IF wa_zkkp_2nd-zqty_panel EQ ' '.
+      wa_zkkp_2nd2-zqty    = wa_zkkp_2nd-zqtysnd.
+    ELSE.
+      wa_zkkp_2nd2-zqty    = wa_zkkp_2nd-zqtysnd * wa_zkkp_2nd-zqty_panel.
+    ENDIF.
+    COLLECT wa_zkkp_2nd2 INTO it_zkkp_2nd2.
+  ENDLOOP.
+  CLEAR wa_zkkp_2nd2.
+
+
+  LOOP AT it_hdr INTO wa_hdr.
+    CLEAR wa_report_2nd.
+    CLEAR wa_gi.
+    CLEAR wa_gr2.
+    CLEAR wa_matdoc_2nd.
+    CLEAR wa_bc.
+
+*  wa_report_2nd-zks   = wa_hdr-zks.
+*  wa_report_2nd-zkkbc = wa_hdr-zks.
+    wa_report_2nd-zkkpo = wa_hdr-zkkpo.
+
+    READ TABLE it_ks INTO wa_ks WITH KEY zkk = wa_hdr-zkk.
+    IF wa_ks-zkk = ' '.
+      wa_report_2nd-zks   = ' '.
+      wa_report_2nd-zkkbc = ' '.
+    ELSEIF wa_ks-zkk = wa_hdr-zkk.
+      wa_report_2nd-zks   = wa_ks-zks.
+      wa_report_2nd-zkkbc = wa_ks-zkkbc.
+    ENDIF.
+
+
+    READ TABLE it_zkkp_2nd2 INTO wa_zkkp_2nd2 WITH KEY zkk = wa_hdr-zkk.
+    IF sy-subrc EQ 0.
+      wa_gr2-zkk           = wa_zkkp_2nd2-zkk.
+      wa_gr2-zkp           = wa_zkkp_2nd2-zkp.
+      wa_report_2nd-zkk   = wa_zkkp_2nd2-zkk.
+      wa_report_2nd-skk   = wa_zkkp_2nd2-zmm_skk.
+      wa_report_2nd-zkp   = wa_zkkp_2nd2-zkp.
+      wa_report_2nd-zunit = wa_zkkp_2nd2-zunit.
+      wa_report_2nd-zqty  = wa_zkkp_2nd2-zqty.
+    ENDIF.
+
+    READ TABLE it_qtygi INTO wa_qtygi WITH KEY zkk =  wa_zkkp_2nd2-zkk.  "ZKP = wa_zkkp_2nd2-zKP.
+    IF wa_qtygi-zkk = wa_zkkp_2nd2-zkk.
+      wa_report_2nd-qtygi = wa_qtygi-zqty.
+      wa_report_2nd-balgi = wa_report_2nd-zqty - wa_report_2nd-qtygi.
+    ELSE.
+      wa_report_2nd-qtygi = ' '.
+      wa_report_2nd-balgi = ' '.
+
+    ENDIF.
+*ENDLOOP.
+
+    LOOP AT it_qtygr INTO wa_qtygr WHERE ebeln =  wa_hdr-zkkpo.
+
+      IF wa_qtygr-ebeln = ''.
+        wa_report_2nd-qtygr =  ''.
+        wa_report_2nd-balgr = ''.
+      ELSE.
+        wa_report_2nd-qtygr = wa_qtygr-erfmg.
+        wa_report_2nd-balgr = wa_report_2nd-zqty - wa_report_2nd-qtygr.
+      ENDIF.
+    ENDLOOP.
+    READ TABLE it_lfa1 INTO wa_lfa1 WITH KEY lifnr = wa_hdr-zname1v.
+    IF sy-subrc EQ 0.
+      wa_report_2nd-zname1v = wa_lfa1-name1.
+    ENDIF.
+
+    APPEND wa_report_2nd TO it_report_2nd.
+
+  ENDLOOP.
+
+  LOOP AT it_matdoc_2nd INTO wa_matdoc_2nd.
+    wa_gr2-mblnr     = wa_matdoc_2nd-mblnr.
+    wa_gr2-zkkpo     = wa_matdoc_2nd-ebeln.
+    wa_gr2-wip       = wa_matdoc_2nd-matnr.
+    wa_gr2-qty       = wa_matdoc_2nd-erfmg.
+    wa_gr2-uom       = wa_matdoc_2nd-erfme.
+    wa_gr2-agr       = wa_matdoc_2nd-dmbtr * 100.
+    wa_gr2-curr      = wa_matdoc_2nd-waers.
+    wa_gr2-budat     = wa_matdoc_2nd-budat.
+
+
+    READ TABLE it_bc INTO wa_bc WITH KEY mblnr = wa_matdoc_2nd-mblnr.
+    IF sy-subrc EQ 0.
+      wa_gr2-sj       = wa_bc-xblnr.
+      wa_gr2-bct      = wa_bc-zbctype.
+      wa_gr2-bcd      = wa_bc-zbcdoc.
+      wa_gr2-bca      = wa_bc-zbcaju.
+      wa_gr2-bcdate   = wa_bc-zbcdate.
+    ENDIF.
+
+    READ TABLE it_hdr INTO wa_hdr WITH KEY zkkpo = wa_matdoc_2nd-ebeln.
+    READ TABLE it_zkkp_2nd2 INTO wa_zkkp_2nd2 WITH KEY zkk = wa_hdr-zkk.
+    IF sy-subrc EQ 0.
+      wa_gr2-zkp    = wa_zkkp_2nd2-zkp.
+      wa_gr2-zkk    = wa_zkkp_2nd2-zkk.
+    ENDIF.
+
+
+    APPEND wa_gr2 TO it_gr2.
+    CLEAR wa_gr2.
+  ENDLOOP.
+
+  LOOP AT it_sj INTO wa_sj.
+
+    wa_gi-mblnr     = wa_sj-mblnr.
+    wa_gi-zkk       = wa_sj-zkk.
+    wa_gi-zkp       = wa_sj-zkp.
+    wa_gi-wip       = wa_sj-matnr.
+    wa_gi-zstyle    = wa_sj-zstyle.
+    wa_gi-qty       = wa_sj-zqty.
+    wa_gi-zunit     = wa_sj-zunit.
+    wa_gi-budat     = wa_sj-budat.
+    wa_gi-zbctype   = wa_sj-zbctype.
+    wa_gi-zbcdoc    = wa_sj-zbcdoc.
+    wa_gi-zbcdate   = wa_sj-zbcdate.
+
+    APPEND wa_gi TO it_gi.
+    CLEAR wa_gi.
+  ENDLOOP.
+
+ENDFORM.
+
+FORM f_display_data2.
+  DATA: lo_alv       TYPE REF TO cl_salv_table,
+        lx_msg       TYPE REF TO cx_salv_msg,
+        ls_msg       TYPE bal_s_msg,
+        lo_functions TYPE REF TO cl_salv_functions_list,
+        lo_layout    TYPE REF TO cl_salv_layout,
+        ls_key       TYPE salv_s_layout_key,
+        lo_display   TYPE REF TO cl_salv_display_settings,
+        lo_selection TYPE REF TO cl_salv_selections,
+        lo_column    TYPE REF TO cl_salv_column_table,
+        lo_columns   TYPE REF TO cl_salv_columns_table.
+
+*  Data for top of page
+  DATA: lr_content TYPE REF TO cl_salv_form_element.
+
+
+  DATA: lo_events TYPE REF TO cl_salv_events_table.
+  IF v_report = ' '.
+    TRY.
+        cl_salv_table=>factory( IMPORTING r_salv_table = lo_alv
+                                CHANGING  t_table      = it_report_2nd ).
+
+
+*   Display header (top of page)
+        PERFORM built_header2  CHANGING lr_content.
+        lo_alv->set_top_of_list( lr_content ).
+        DATA: lr_events TYPE REF TO cl_salv_events_table.
+        lr_events = lo_alv->get_event( ).
+        CREATE OBJECT gr_events.
+        SET HANDLER gr_events->top_of_page FOR lr_events.
+
+
+
+      CATCH cx_salv_msg INTO lx_msg .
+        ls_msg = lx_msg->get_message( ).
+        MESSAGE ID ls_msg-msgid TYPE 'S' NUMBER ls_msg-msgno
+          WITH ls_msg-msgv1 ls_msg-msgv2 ls_msg-msgv3 ls_msg-msgv4
+          DISPLAY LIKE 'E'.
+        LEAVE LIST-PROCESSING.
+    ENDTRY.
+*    ELSE.
+  ELSEIF v_report = '1'.
+    TRY.
+        cl_salv_table=>factory( IMPORTING r_salv_table = lo_alv
+                                CHANGING  t_table      = it_gi_d ).
+
+      CATCH cx_salv_msg INTO lx_msg .
+        ls_msg = lx_msg->get_message( ).
+        MESSAGE ID ls_msg-msgid TYPE 'S' NUMBER ls_msg-msgno
+          WITH ls_msg-msgv1 ls_msg-msgv2 ls_msg-msgv3 ls_msg-msgv4
+          DISPLAY LIKE 'E'.
+        LEAVE LIST-PROCESSING.
+    ENDTRY.
+
+  ELSE.
+    TRY.
+        cl_salv_table=>factory( IMPORTING r_salv_table = lo_alv
+                                CHANGING  t_table      = it_gr2_d ).
+      CATCH cx_salv_msg INTO lx_msg .
+        ls_msg = lx_msg->get_message( ).
+        MESSAGE ID ls_msg-msgid TYPE 'S' NUMBER ls_msg-msgno
+          WITH ls_msg-msgv1 ls_msg-msgv2 ls_msg-msgv3 ls_msg-msgv4
+          DISPLAY LIKE 'E'.
+        LEAVE LIST-PROCESSING.
+    ENDTRY.
+
+  ENDIF.
+  lo_functions = lo_alv->get_functions( ).
+  lo_functions->set_all( abap_true ).
+
+  "enable control layout
+  ls_key-report = sy-repid.
+  lo_layout = lo_alv->get_layout( ).
+  lo_layout->set_key( ls_key ).
+  lo_layout->set_default( abap_true ).
+  lo_layout->set_save_restriction( cl_salv_layout=>restrict_none ).
+
+
+  "config stripped display
+  lo_display = lo_alv->get_display_settings( ).
+  lo_display->set_striped_pattern( cl_salv_display_settings=>true ).
+
+  "multi rows selection
+  lo_selection = lo_alv->get_selections( ).
+  lo_selection->set_selection_mode( if_salv_c_selection_mode=>multiple ).
+
+  "optimize columns width
+  lo_columns = lo_alv->get_columns( ).
+  lo_columns->set_optimize( ).
+
+  FIELD-SYMBOLS : <field> TYPE any.
+
+
+  PERFORM f_custom_columns2 CHANGING lo_columns.
+
+*// 2. Set the Color Column to the ALV
+
+* additional double click
+  lo_events = lo_alv->get_event( ).
+  CREATE OBJECT event_handler.
+  SET HANDLER event_handler->on_double_click FOR lo_events.
+
+  lo_alv->display( ).
+
+
+ENDFORM.
+
+
+FORM built_header2 CHANGING cr_content TYPE REF TO cl_salv_form_element.
+  DATA: lr_grid   TYPE REF TO cl_salv_form_layout_grid,
+        lr_grid_1 TYPE REF TO cl_salv_form_layout_grid,
+        lr_label  TYPE REF TO cl_salv_form_label,
+        lr_text   TYPE REF TO cl_salv_form_text,
+        l_text    TYPE string,
+        date(60)  TYPE c.
+  CONCATENATE sy-datum+6(2)
+              sy-datum+4(2)
+              sy-datum(4) INTO date
+              SEPARATED BY '.'.
+  CREATE OBJECT lr_grid.
+  l_text = 'Report KK Secondary' .
+  lr_grid->create_header_information(
+    row    = 1
+    column = 1
+    text    = l_text
+    tooltip = l_text ).
+  lr_grid->add_row( ).
+  lr_grid_1 = lr_grid->create_grid(
+                row    = 4
+                column = 1 ).
+  lr_label = lr_grid_1->create_label(
+    row     = 1
+    column  = 1
+    text    = 'Operations'
+    tooltip = 'Operations' ).
+  lr_text = lr_grid_1->create_text(
+    row     = 2
+    column  = 1
+    text    = 'Double Click on "QTY GI" to show details of Goods Issue'
+    tooltip = 'Double Click on "QTY GI" to show details of Goods Issue' ).
+  lr_text = lr_grid_1->create_text(
+    row     = 3
+    column  = 1
+    text    = 'Double Click on "QTY GR" to show details of Goods Receive'
+    tooltip = 'Double Click on "QTY GR" to show details of Goods Receive' ).
+  lr_label->set_label_for( lr_text ).
+  lr_label = lr_grid_1->create_label(
+    row    = 4
+    column = 1
+    text    = 'Date'
+    tooltip = 'Date' ).
+*  l_text = 'today'.
+  lr_text = lr_grid_1->create_text(
+    row    = 5
+    column = 1
+    text    = date
+    tooltip = date ).
+  lr_label->set_label_for( lr_text ).
+  cr_content = lr_grid.
+ENDFORM.                    " built_header
+
+
+
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*& Form F_HIDE_COLUMNS
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      <--P_LO_COLUMNS  text
+*&---------------------------------------------------------------------*
+FORM f_custom_columns2 CHANGING co_columns TYPE REF TO cl_salv_columns_table.
+
+  DATA: lo_column  TYPE REF TO cl_salv_column_table.
+
+  DEFINE m_set_visible.
+    lo_column ?= co_columns->get_column( &1 ).
+    lo_column->set_visible( value = &2 ).
+  END-OF-DEFINITION.
+
+  DEFINE m_set_text.
+    lo_column ?= co_columns->get_column( &1 ).
+    lo_column->set_short_text( &2 ).
+    lo_column->set_medium_text( &2 ).
+    lo_column->set_long_text( &2 ).
+  END-OF-DEFINITION.
+
+
+
+  IF v_report = ' '.
+    m_set_text 'ZKP' 'KP No'.
+    m_set_text 'SKK' 'Status KK'.
+    m_set_text 'ZNAME1V' 'Vendor'.
+    m_set_text 'ZKK' 'KK Master'.
+    m_set_text 'ZKS' 'KK Sub'.
+    m_set_text 'ZKKBC' 'KKBC'.
+    m_set_text 'ZKKPO' 'PO No'.
+    m_set_text 'ZQTY' 'QTY KK'.
+    m_set_text 'QTYGI' 'QTY GI'.
+    m_set_text 'BALGI' 'Balance GI'.
+    m_set_text 'QTYGR' 'QTY GR'.
+    m_set_text  'BALGR' 'Balance GR'.
+    m_set_text  'ZUNIT' 'UoM.'.
+
+
+  ELSEIF v_report = '1'.
+*  ELSE.
+    m_set_text 'ZKP' 'NO KP'.
+    m_set_text 'ZKK' 'NO KK'.
+    m_set_text 'MBLNR' 'Matdoc'.
+    m_set_text 'BUDAT' 'TGL GI'.
+    m_set_text 'WIP' 'Material'.
+    m_set_text 'ZSTYLE' 'Mat. Var'.
+    m_set_text 'QTY' 'QTY GI'.
+    m_set_text 'ZUNIT' 'UoM'.
+    m_set_text 'ZBCTYPE' 'BC. Type'.
+    m_set_text 'ZBCDOC' 'BC. NO'.
+    m_set_text 'ZBCDATE' 'BC. Date'.
+
+  ELSE.
+
+    m_set_text 'ZKP' 'NO KP'.
+    m_set_text 'ZKK' 'NO KK'.
+    m_set_text 'ZKKPO' 'PO'.
+    m_set_text 'MBLNR' 'Matdoc'.
+    m_set_text 'BUDAT' 'Post.Dtae'.
+    m_set_text 'WIP' 'Material'.
+    m_set_text 'QTY' 'QTY GR'.
+    m_set_text 'UOM' 'UoM'.
+    m_set_text 'AGR' 'Amt. GR'.
+    m_set_text 'CURR' 'Currency'.
+    m_set_text 'SJ' 'No SJ'.
+    m_set_text 'BCT' 'BC Type'.
+    m_set_text 'BCD' 'BC Draft'.
+    m_set_text 'BCA' 'BC Aju'.
+    m_set_text 'BCDATE' 'BC Date'.
+
+
+  ENDIF.
+
+ENDFORM.
+
+*  *&---------------------------------------------------------------------*
+*FORM f_adjust_coltext  USING    VALUE(p_short)
+*                                VALUE(p_medl)
+*                       CHANGING p_lo_column TYPE REF TO cl_salv_column_table.
+*
+*  DATA : lv_short TYPE scrtext_s,
+*         lv_medi  TYPE scrtext_m,
+*         lv_long  TYPE scrtext_l.
+*
+*  lv_short = p_short.
+*  lv_medi = p_medl.
+*  lv_long = p_medl.
+*
+*  p_lo_column->set_short_text( lv_short ).
+*  p_lo_column->set_medium_text( lv_medi ).
+*  p_lo_column->set_long_text( lv_long ).
+*ENDFORM.
+
+*==========================================================================End of Secondary Report===========================================================================
+
+*==========================================================================BEGIN OF CMT MVT GET DATA AND PROSES===============================================================
+
+FORM get_data3.
+
+  SELECT k~zkp, k~zkk, k~zqtysnd, k~zprice, k~zcurr, k~zmm_skk, r~zks, k~del_ind, k~zstyle  INTO TABLE @it_zkp
+    FROM zmmtb_kk_kp AS k
+    INNER JOIN zmmtb_kk_hdr AS s ON s~zkk = k~zkk
+*    INNER JOIN zmmtb_ks_kp as z on k~zkk = z~zkk and k~zkp = z~zkp
+    LEFT OUTER JOIN zmmtb_ks_hdr AS r ON s~zkk = r~zkk
+    WHERE k~zkk IN @s_zkk AND
+          k~zstyle IN @s_zstyle AND
+          k~zkp IN @s_zkp AND
+          s~werks IN @s_werks AND k~zqtysnd > 0 AND
+          s~zname1v IN @s_zname
+          AND k~del_ind EQ ' ' AND
+          r~zks IN @s_zks AND
+          r~zkkbc IN @s_zkkbc.
+
+  SORT it_zkp BY zkp zstyle zqtysnd.
+  DELETE ADJACENT DUPLICATES FROM it_zkp COMPARING ALL FIELDS. " Updated by PB-FT06 021020
+
+  IF it_zkp[] IS NOT INITIAL.
+
+    SELECT k~zkk, k~zname1v, k~zkkpo, k~werks, s~zkkbc INTO TABLE @it_zhdr
+      FROM zmmtb_kk_hdr AS k LEFT OUTER JOIN zmmtb_ks_hdr AS s ON k~zkk = s~zkk
+      FOR ALL ENTRIES IN @it_zkp
+      WHERE k~zkk = @it_zkp-zkk.
+
+
+    SELECT vbeln matnr menge_actual addta INTO TABLE it_pno
+      FROM zmmtb_pno
+      FOR ALL ENTRIES IN it_zkp
+      WHERE  vbeln = it_zkp-zkp AND addta EQ ' '.
+
+
+    SELECT vbeln abgru kwmeng posnr matnr meins INTO TABLE it_vbap
+      FROM vbap
+      FOR ALL ENTRIES IN it_zkp
+      WHERE vbeln = it_zkp-zkp AND abgru EQ ' '.
+
+    SELECT zks zkp zkk INTO TABLE it_zks
+      FROM zmmtb_ks_kp
+      FOR ALL ENTRIES IN it_zkp
+      WHERE zkk = it_zkp-zkk AND zkp = it_zkp-zkp.
+
+
+    SELECT m~bktxt m~erfmg m~mblnr m~xblnr m~budat m~bwart m~cancelled " QTY SJ Req by Mbk Riya 010920
+      m~ebeln m~ebelp m~matnr m~mat_kdauf m~lgort_sid m~meins h~zbctype h~zbcdoc h~zbcdate
+      INTO TABLE it_mat
+      FROM matdoc AS m
+      left outer join zmmtb_hmigo AS h ON m~mblnr = h~mblnr       " 280920 changed type of join by PB-ft06
+      FOR ALL ENTRIES IN it_zkp
+      WHERE m~bktxt = it_zkp-zkk  AND ( bwart = '919' OR bwart = '101' ) AND cancelled =' '
+      AND ( lgort_sid = 'FG01' OR lgort_sid = 'PROD' ).          "  End Of Updating
+
+
+    SELECT ebeln bwart cancelled erfmg ebelp mblnr xblnr budat kdauf meins INTO TABLE it_mdc  " Qty GR PO
+      FROM matdoc
+      FOR ALL ENTRIES IN it_zhdr
+      WHERE ebeln = it_zhdr-zkkpo AND bwart EQ '101' AND cancelled EQ ' '.
+
+
+    SELECT zks zkp matnr zunit zqtyori INTO TABLE it_prm
+      FROM zmmtb_prm_kp
+      FOR ALL ENTRIES IN it_zks
+      WHERE zks = it_zks-zks AND zkp = it_zks-zkp.
+
+    SELECT vbeln matnr menge_actual addta INTO TABLE it_pno
+      FROM zmmtb_pno
+      FOR ALL ENTRIES IN it_prm
+      WHERE  vbeln = it_prm-zkp AND matnr = it_prm-matnr AND addta EQ ' '.
+
+    SELECT vbeln zkksub menge menge_r menge_canc matnr menge_req mblnr_r meins mblnr budat bldat zeile INTO TABLE it_pgi
+      FROM zmmtb_pgi
+      FOR ALL ENTRIES IN it_zks
+      WHERE zkksub = it_zks-zks AND menge_canc EQ ' '.
+
+
+*    IF it_pgi[] IS NOT INITIAL. "20200915 - Updated by PB-AB (Exclude Cancelled Matdoc Return) Req by Mas Ridho
+    SELECT mblnr zbctype zbcdoc zbcdate INTO TABLE it_hmigo  " DOC DATA BC  FOR 261
+      FROM zmmtb_hmigo
+      FOR ALL ENTRIES IN it_pgi
+      WHERE mblnr = it_pgi-mblnr.
+**          AND mjahr = it_pgi-mjahr. "20200915 - Updated by PB-AB (Exclude Cancelled Matdoc Return) Req by Mas Ridho
+*
+    SELECT h~mblnr h~zbctype h~zbcdoc h~zbcdate m~xblnr INTO TABLE it_hmigo2  " DOC DATA BC  FOR 262
+      FROM zmmtb_hmigo AS h INNER JOIN matdoc AS m ON h~mblnr = m~mblnr
+      FOR ALL ENTRIES IN it_pgi
+      WHERE h~mblnr = it_pgi-mblnr_r.
+*          AND h~mjahr = it_pgi-mjahr_r. "20200915 - Updated by PB-AB (Exclude Cancelled Matdoc Return) Req by Mas Ridho
+
+*      "20200915 - Updated by PB-AB (Exclude Cancelled Matdoc Return) Req by Mas Ridho
+*      SELECT ebeln bwart cancelled erfmg ebelp mblnr xblnr budat kdauf meins
+*        FROM matdoc
+*        INTO TABLE gt_mat_ret
+*        FOR ALL ENTRIES IN it_pgi
+*        WHERE mblnr = it_pgi-mblnr_r
+*          AND mjahr = it_pgi-mjahr_r.
+*      "End of Updating (20200915 - Exclude Cancelled Matdoc Return)
+*    ENDIF.
+
+*
+*  select smbln matnr bktxt mat_kdauf into table it_mdcr
+*    FROM matdoc
+*    FOR ALL ENTRIES IN it_pgi
+*    where smbln = it_pgi-mblnr_r and mat_kdauf = it_pgi-vbeln and matnr = it_pgi-matnr.
+
+
+    SELECT lifnr name1 INTO TABLE it_vendor
+      FROM lfa1
+      FOR ALL ENTRIES IN it_zhdr
+      WHERE lifnr = it_zhdr-zname1v.
+
+
+  ENDIF.
+ENDFORM.
+
+FORM proses_data3.
+
+  LOOP AT it_pgi.
+    SELECT SINGLE smbln FROM matdoc INTO it_pgi-smbln
+      WHERE smbln = it_pgi-mblnr_r AND matnr = it_pgi-matnr AND mat_kdauf = it_pgi-vbeln.
+
+    SELECT SINGLE budat bldat FROM matdoc INTO (it_pgi-budatr, it_pgi-bldatr)
+      WHERE mblnr = it_pgi-mblnr_r AND matnr = it_pgi-matnr.
+
+    MODIFY it_pgi.
+  ENDLOOP.
+
+
+  MOVE-CORRESPONDING it_pgi[] TO it_pgi3[].                                     "230920 Updated by PB-FT06 req by Mbk Rya delete duplicate data return in
+  SORT it_pgi3 BY matnr mblnr ASCENDING.
+  DELETE ADJACENT DUPLICATES FROM it_pgi3 COMPARING matnr mblnr_r menge_r zkksub.    "250920 Updated by PB-FT06 adding parameter duplicate data
+
+*clear duplicate data Req by Mbk Rya 150920
+  loop at it_pgi into wa_pgi.
+    wa_pgi2-vbeln   = wa_pgi-vbeln.
+    wa_pgi2-zkksub  = wa_pgi-zkksub.
+    wa_pgi2-menge   = wa_pgi-menge.
+*    wa_pgi2-menge_r = wa_pgi-menge_r.
+    wa_pgi2-matnr   = wa_pgi-matnr.
+    wa_pgi2-mblnr   = wa_pgi-mblnr.
+    wa_pgi2-smbln   = wa_pgi-smbln.
+   collect wa_pgi2 into it_pgi2.
+   clear wa_pgi.
+  endloop.
+*end of updating
+
+  SORT it_mat BY bktxt bwart budat.  " QTY SJ REQ BY MBK RIYA 010920.
+  LOOP AT it_mat INTO wa_mat.
+*    wa_mat2-matnr      = wa_mat-matnr.
+    wa_mat2-bktxt      = wa_mat-bktxt.
+*    wa_mat2-bwart      = wa_mat-bwart.
+    wa_mat2-erfmg      = wa_mat-erfmg.
+*    wa_mat2-mat_kdauf  = wa_mat-mat_kdauf.
+    COLLECT wa_mat2 INTO it_mat2.
+  ENDLOOP.
+  CLEAR wa_mat2.                    " END OF UPDATING.
+
+
+  SORT it_zkp BY zkk zkp.
+  LOOP AT it_zkp INTO wa_zkp.
+    wa_sumkk-zks     = wa_zkp-zks.
+    wa_sumkk-zkp     = wa_zkp-zkp.
+    wa_sumkk-zkk     = wa_zkp-zkk.
+    wa_sumkk-qtykk = wa_zkp-qtykk.
+    COLLECT wa_sumkk INTO it_sumkk.
+  ENDLOOP.
+  CLEAR wa_sumkk.
+
+  SORT it_mdc BY ebeln.
+  LOOP AT it_mdc INTO wa_mdc.
+    wa_summdc-kdauf = wa_mdc-kdauf.
+    wa_summdc-ebeln = wa_mdc-ebeln.
+    wa_summdc-erfmg = wa_mdc-erfmg.
+    COLLECT wa_summdc INTO it_summdc.
+  ENDLOOP.
+  CLEAR wa_summdc.
+
+
+  SORT it_vbap BY vbeln.
+  LOOP AT it_vbap INTO wa_vbap.
+    wa_sumvbap-vbeln  = wa_vbap-vbeln.
+    wa_sumvbap-kwmeng = wa_vbap-kwmeng.
+    wa_sumvbap-meins  = wa_vbap-meins.
+    COLLECT wa_sumvbap INTO it_sumvbap.
+  ENDLOOP.
+  CLEAR wa_sumvbap.
+
+  SORT it_pgi BY zkksub matnr.
+  LOOP AT it_pgi INTO wa_pgi WHERE smbln EQ ' '.
+    wa_sumpgi-zkksub     = wa_pgi-zkksub.
+    wa_sumpgi-matnr      = wa_pgi-matnr.
+    wa_sumpgi-menge_req  = wa_pgi-menge_req.
+    wa_sumpgi-menge      = wa_pgi-menge.
+    wa_sumpgi-menge_r    = wa_pgi-menge_r.
+    COLLECT wa_sumpgi INTO it_sumpgi.
+  ENDLOOP.
+  CLEAR wa_sumpgi.
+
+  SORT it_pgi3 BY zkksub matnr.                        "280920 Updated by PB-FT06 qty menge_r (return)
+  LOOP AT it_pgi3 INTO wa_pgi3 WHERE smbln EQ ' '.
+    wa_pgi4-zkksub     = wa_pgi3-zkksub.
+    wa_pgi4-matnr      = wa_pgi3-matnr.
+    wa_pgi4-menge_req  = wa_pgi3-menge_req.
+    wa_pgi4-menge      = wa_pgi3-menge.
+    wa_pgi4-menge_r    = wa_pgi3-menge_r.
+    COLLECT wa_pgi4 INTO it_pgi4.
+  ENDLOOP.
+  CLEAR wa_pgi4.
+
+
+  LOOP AT it_prm INTO wa_prm.
+    wa_cmtrp-matnr = wa_prm-matnr.
+    wa_cmtrp-zunit = wa_prm-zunit.
+    wa_cmtrp-totc = wa_prm-zqtyori.
+    wa_cmtrp-zkp   = wa_prm-zkp.
+    wa_cmtrp-zks   = wa_prm-zks.
+
+    READ TABLE it_zks INTO wa_zks WITH KEY  zks = wa_prm-zks.
+    IF sy-subrc EQ 0.
+*   wa_cmtrp-zks   = wa_zks-zks.
+    ENDIF.
+
+    READ TABLE it_zkp INTO wa_zkp WITH KEY zkp = wa_prm-zkp zks = wa_prm-zks.
+    IF sy-subrc EQ 0.
+*   wa_cmtrp-zkp   = wa_zkp-zkp.
+      wa_cmtrp-zkk   = wa_zkp-zkk.
+      wa_cmtrp-skk   = wa_zkp-skk.
+      wa_cmtrp-curr  = wa_zkp-curr.
+      IF wa_cmtrp-curr = 'IDR'.
+        wa_cmtrp-zprice = wa_zkp-zprice * 100.
+      ELSE.
+        wa_cmtrp-zprice = wa_zkp-zprice.
+      ENDIF.
+    ENDIF.
+
+
+    READ TABLE it_sumvbap INTO wa_sumvbap WITH KEY vbeln = wa_prm-zkp.
+    IF sy-subrc EQ 0.
+      wa_cmtrp-kwmeng = wa_sumvbap-kwmeng.
+      wa_cmtrp-meins  = wa_sumvbap-meins.
+    ENDIF.
+
+    READ TABLE it_sumkk INTO wa_sumkk WITH KEY zkk = wa_zkp-zkk zkp = wa_prm-zkp zks = wa_prm-zks.
+    IF sy-subrc EQ 0.
+      wa_cmtrp-qtykk = wa_sumkk-qtykk.
+      wa_cmtrp-vkk  = wa_cmtrp-qtykk * wa_cmtrp-zprice.
+    ENDIF.
+
+
+    READ TABLE it_zhdr INTO wa_zhdr WITH KEY zkk = wa_zkp-zkk.
+    IF sy-subrc EQ 0.
+      wa_cmtrp-zkkpo = wa_zhdr-zkkpo.
+      wa_cmtrp-zkkbc = wa_zhdr-zkkbc.
+    ENDIF.
+
+    READ TABLE it_vendor INTO wa_vendor WITH KEY lifnr = wa_zhdr-zname1v.
+    IF sy-subrc EQ 0.
+      wa_cmtrp-zname1v = wa_vendor-name1.
+    ENDIF.
+
+    READ TABLE it_summdc INTO wa_summdc WITH KEY ebeln = wa_zhdr-zkkpo kdauf = wa_prm-zkp.
+    IF sy-subrc EQ 0.
+      IF wa_zhdr-zkkpo NE ' '.
+        wa_cmtrp-erfmg   = wa_summdc-erfmg.
+      ELSE.
+        wa_cmtrp-erfmg   = ' '.
+      ENDIF.
+      wa_cmtrp-var     = wa_cmtrp-qtykk - wa_cmtrp-erfmg.
+    ELSE.
+      wa_cmtrp-erfmg   = ' '.
+      wa_cmtrp-var     = wa_cmtrp-qtykk - wa_cmtrp-erfmg.
+    ENDIF.
+
+    READ TABLE it_mat2 INTO wa_mat2 WITH KEY bktxt = wa_zkp-zkk. " QTY SJ REQ BY MBK RIYA 010920
+    IF sy-subrc EQ 0.
+      wa_cmtrp-qtysj   = wa_mat2-erfmg.
+    ENDIF.                                                         " END OF UPDATING
+
+    READ TABLE it_sumpgi INTO wa_sumpgi WITH KEY zkksub = wa_prm-zks matnr = wa_prm-matnr.
+    IF sy-subrc EQ 0.
+      wa_cmtrp-gi     = wa_sumpgi-menge.
+*      wa_cmtrp-ri     = wa_sumpgi-menge_r.
+*      wa_cmtrp-tot    = wa_cmtrp-gi - wa_cmtrp-ri.
+*      wa_cmtrp-balqty = wa_cmtrp-totc - ( wa_cmtrp-gi + wa_cmtrp-ri ).
+    ELSE. " Updated by PB-FT06 REQ BY MBK RIYA ADDING LOGIC IF ABAP NOT TRUE 051020
+       wa_cmtrp-gi     = ' '.
+
+    ENDIF.
+
+   READ TABLE it_pgi4 INTO wa_pgi4 WITH KEY zkksub = wa_prm-zks matnr = wa_prm-matnr.  " 280920 Updated by PB-FT06 deletion of duplicate data menge_r (return)
+    IF sy-subrc EQ 0.
+*      wa_cmtrp-gi     = wa_sumpgi-menge.
+      wa_cmtrp-ri     = wa_pgi4-menge_r.
+      wa_cmtrp-tot    = wa_cmtrp-gi - wa_cmtrp-ri.
+      wa_cmtrp-balqty = wa_cmtrp-totc - wa_cmtrp-tot. "change formula req by mbk riya updated by PB-FT06 051020 ( wa_cmtrp-totc - ( wa_cmtrp-gi + wa_cmtrp-ri ) old value)
+    else. " Updated by PB-FT06 REQ BY MBK RIYA ADDING LOGIC IF ABAP NOT TRUE 051020
+      wa_cmtrp-ri     = ' '.
+      wa_cmtrp-tot    = wa_cmtrp-gi - wa_cmtrp-ri.
+      wa_cmtrp-balqty = wa_cmtrp-totc - wa_cmtrp-tot.
+
+    ENDIF.
+
+
+    APPEND wa_cmtrp TO it_cmtrp.
+    CLEAR wa_cmtrp.
+  ENDLOOP.
+
+  SORT it_cmtrp BY zks.
+  DATA : kk TYPE c LENGTH 20.
+  LOOP AT it_cmtrp INTO wa_cmtrp.
+    IF kk = wa_cmtrp-zks.
+*  wa_cmtrp-zkp      = ' '.
+      wa_cmtrp-kwmeng   = ' '.
+*  wa_cmtrp-zks      = ' '.
+*  wa_cmtrp-zname1v  = ' '.
+      wa_cmtrp-qtykk    = ' '.
+      wa_cmtrp-zprice   = ' '.
+      wa_cmtrp-curr     = ' '.
+      wa_cmtrp-vkk      = ' '.
+*  wa_cmtrp-zkkpo    = ' '.
+      wa_cmtrp-erfmg    = ' '.
+      wa_cmtrp-qtysj    = ' '.
+      wa_cmtrp-var     = ' '.
+      wa_cmtrp-meins    = ' '.
+*  wa_cmtrp-skk      = ' '.
+      MODIFY it_cmtrp FROM wa_cmtrp.
+    ENDIF.
+    AT NEW zks.
+      kk = wa_cmtrp-zks.
+    ENDAT.
+  ENDLOOP.
+
+  LOOP AT it_pgi2 INTO wa_pgi2 WHERE smbln EQ ' '.
+    wa_pgirp-zkksub   = wa_pgi2-zkksub.
+    wa_pgirp-matnr    = wa_pgi2-matnr.
+*    wa_pgirp-uom      = wa_pgi-meins.
+    wa_pgirp-matdoc   = wa_pgi2-mblnr.
+    wa_pgirp-qty      = wa_pgi2-menge.
+*    wa_pgirp-budat    = wa_pgi-budat.
+*    wa_pgirp-bldat    = wa_pgi-bldat.
+*    wa_pgirp-mblnr_r  = wa_pgi-mblnr_r.
+*    wa_pgirp-menge_r  = wa_pgi2-menge_r.
+*    wa_pgirp-budatr   = wa_pgi-budatr.
+*    wa_pgirp-bldatr   = wa_pgi-bldatr.
+
+  read table it_pgi into wa_pgi with key smbln = ' ' mblnr = wa_pgi2-mblnr matnr = wa_pgi2-matnr.
+    if sy-subrc eq 0.
+      wa_pgirp-menge_r  = wa_pgi-menge_r.
+      wa_pgirp-uom      = wa_pgi-meins.
+      wa_pgirp-budat    = wa_pgi-budat.
+      wa_pgirp-bldat    = wa_pgi-bldat.
+      wa_pgirp-mblnr_r  = wa_pgi-mblnr_r.
+      wa_pgirp-budatr   = wa_pgi-budatr.
+      wa_pgirp-bldatr   = wa_pgi-bldatr.
+   endif.
+
+
+    READ TABLE it_hmigo INTO wa_hmigo WITH KEY mblnr = wa_pgi-mblnr. " BC DATA REQ BY MBK RIYA 010920
+    IF wa_hmigo-mblnr = wa_pgi-mblnr.
+      wa_pgirp-zbctype  = wa_hmigo-zbctype.
+      wa_pgirp-zbcdoc   = wa_hmigo-zbcdoc.
+      wa_pgirp-zbcdate  = wa_hmigo-zbcdate.
+    ELSE.
+      wa_pgirp-zbctype  = ' '.
+      wa_pgirp-zbcdoc   = ' '.
+      wa_pgirp-zbcdate  = ' '.
+    ENDIF.
+
+    READ TABLE it_hmigo2 INTO wa_hmigo2 WITH KEY mblnr = wa_pgi-mblnr_r.
+    IF sy-subrc EQ 0.
+
+      wa_pgirp-zbctype2  = wa_hmigo2-zbctype.
+      wa_pgirp-zbcdoc2   = wa_hmigo2-zbcdoc.
+      wa_pgirp-zbcdate2  = wa_hmigo2-zbcdate.
+      wa_pgirp-xblnr     = wa_hmigo2-xblnr.
+
+    ENDIF.                                                           " END OF
+
+
+    APPEND wa_pgirp TO it_pgirp.
+  ENDLOOP.
+
+  LOOP AT it_mdc INTO wa_mdc.          " GR PO DETAIL REQ BY MBK RIYA 020920
+
+    wa_grpodtl-ebeln = wa_mdc-ebeln.
+    wa_grpodtl-mblnr = wa_mdc-mblnr.
+    wa_grpodtl-budat = wa_mdc-budat.
+    wa_grpodtl-xblnr = wa_mdc-xblnr.
+    wa_grpodtl-erfmg = wa_mdc-erfmg.
+    wa_grpodtl-meins = wa_mdc-meins.
+    APPEND wa_grpodtl TO it_grpodtl.
+    CLEAR wa_grpodtl.
+  ENDLOOP.
+
+  LOOP AT it_mat INTO wa_mat.
+    wa_sjdtl-bktxt   = wa_mat-bktxt.
+    wa_sjdtl-mblnr   = wa_mat-mblnr.
+    wa_sjdtl-budat   = wa_mat-budat.
+    wa_sjdtl-xblnr   = wa_mat-xblnr.
+    wa_sjdtl-erfmg   = wa_mat-erfmg.
+    wa_sjdtl-meins   = wa_mat-meins.
+    wa_sjdtl-bwart   = wa_mat-bwart.
+    wa_sjdtl-zbctype = wa_mat-zbctype.
+    wa_sjdtl-zbcdoc  = wa_mat-zbcdoc.
+    wa_sjdtl-zbcdate = wa_mat-zbcdate.
+
+    APPEND wa_sjdtl TO it_sjdtl.
+    CLEAR wa_sjdtl.
+  ENDLOOP.                             " END OF UPDATING.
+
+
+ENDFORM.
+
+
+
+FORM f_display_data3.
+
+  DATA: lo_alv       TYPE REF TO cl_salv_table,
+        lx_msg       TYPE REF TO cx_salv_msg,
+        ls_msg       TYPE bal_s_msg,
+        lo_functions TYPE REF TO cl_salv_functions_list,
+        lo_layout    TYPE REF TO cl_salv_layout,
+        ls_key       TYPE salv_s_layout_key,
+        lo_display   TYPE REF TO cl_salv_display_settings,
+        lo_selection TYPE REF TO cl_salv_selections,
+        lo_column    TYPE REF TO cl_salv_column_table,
+        lo_columns   TYPE REF TO cl_salv_columns_table.
+
+* Data for top of page
+  DATA: lr_content TYPE REF TO cl_salv_form_element.
+
+  DATA: lo_events TYPE REF TO cl_salv_events_table.
+  IF v_report = ' '.
+    TRY.
+        cl_salv_table=>factory( IMPORTING r_salv_table = lo_alv
+                                CHANGING  t_table      = it_cmtrp ).
+
+
+*   Display header (top of page)
+        PERFORM built_header3  CHANGING lr_content.
+        lo_alv->set_top_of_list( lr_content ).
+        DATA: lr_events TYPE REF TO cl_salv_events_table.
+        lr_events = lo_alv->get_event( ).
+        CREATE OBJECT gr_events.
+        SET HANDLER gr_events->top_of_page FOR lr_events.
+
+
+
+      CATCH cx_salv_msg INTO lx_msg .
+        ls_msg = lx_msg->get_message( ).
+        MESSAGE ID ls_msg-msgid TYPE 'S' NUMBER ls_msg-msgno
+          WITH ls_msg-msgv1 ls_msg-msgv2 ls_msg-msgv3 ls_msg-msgv4
+          DISPLAY LIKE 'E'.
+        LEAVE LIST-PROCESSING.
+    ENDTRY.
+  ELSEIF v_report = '1'.
+    TRY.
+        cl_salv_table=>factory( IMPORTING r_salv_table = lo_alv
+                                CHANGING  t_table      = it_pgirp_d ).
+      CATCH cx_salv_msg INTO lx_msg .
+        ls_msg = lx_msg->get_message( ).
+        MESSAGE ID ls_msg-msgid TYPE 'S' NUMBER ls_msg-msgno
+          WITH ls_msg-msgv1 ls_msg-msgv2 ls_msg-msgv3 ls_msg-msgv4
+          DISPLAY LIKE 'E'.
+        LEAVE LIST-PROCESSING.
+    ENDTRY.
+
+  ELSEIF v_report = '2'.
+    TRY.
+        cl_salv_table=>factory( IMPORTING r_salv_table = lo_alv
+                                CHANGING  t_table      = it_grpodtl_d ).
+      CATCH cx_salv_msg INTO lx_msg .
+        ls_msg = lx_msg->get_message( ).
+        MESSAGE ID ls_msg-msgid TYPE 'S' NUMBER ls_msg-msgno
+          WITH ls_msg-msgv1 ls_msg-msgv2 ls_msg-msgv3 ls_msg-msgv4
+          DISPLAY LIKE 'E'.
+        LEAVE LIST-PROCESSING.
+    ENDTRY.
+
+  ELSE.
+    TRY.
+        cl_salv_table=>factory( IMPORTING r_salv_table = lo_alv
+                                CHANGING  t_table      = it_sjdtl_d ).
+      CATCH cx_salv_msg INTO lx_msg .
+        ls_msg = lx_msg->get_message( ).
+        MESSAGE ID ls_msg-msgid TYPE 'S' NUMBER ls_msg-msgno
+          WITH ls_msg-msgv1 ls_msg-msgv2 ls_msg-msgv3 ls_msg-msgv4
+          DISPLAY LIKE 'E'.
+        LEAVE LIST-PROCESSING.
+    ENDTRY.
+
+  ENDIF.
+  lo_functions = lo_alv->get_functions( ).
+  lo_functions->set_all( abap_true ).
+
+  "enable control layout
+  ls_key-report = sy-repid.
+  lo_layout = lo_alv->get_layout( ).
+  lo_layout->set_key( ls_key ).
+  lo_layout->set_default( abap_true ).
+  lo_layout->set_save_restriction( cl_salv_layout=>restrict_none ).
+
+
+  "config stripped display
+  lo_display = lo_alv->get_display_settings( ).
+  lo_display->set_striped_pattern( cl_salv_display_settings=>true ).
+
+  "multi rows selection
+  lo_selection = lo_alv->get_selections( ).
+  lo_selection->set_selection_mode( if_salv_c_selection_mode=>multiple ).
+
+  "optimize columns width
+  lo_columns = lo_alv->get_columns( ).
+  lo_columns->set_optimize( ).
+
+  FIELD-SYMBOLS : <field> TYPE any.
+
+
+  PERFORM f_custom_columns3 CHANGING lo_columns.
+
+*// 2. Set the Color Column to the ALV
+
+* additional double click
+  lo_events = lo_alv->get_event( ).
+  CREATE OBJECT event_handler.
+  SET HANDLER event_handler->on_double_click FOR lo_events.
+
+  lo_alv->display( ).
+
+ENDFORM.
+
+
+
+FORM built_header3 CHANGING cr_content TYPE REF TO cl_salv_form_element.
+  DATA: lr_grid   TYPE REF TO cl_salv_form_layout_grid,
+        lr_grid_1 TYPE REF TO cl_salv_form_layout_grid,
+        lr_label  TYPE REF TO cl_salv_form_label,
+        lr_text   TYPE REF TO cl_salv_form_text,
+        l_text    TYPE string,
+        date(60)  TYPE c.
+  CONCATENATE sy-datum+6(2)
+              sy-datum+4(2)
+              sy-datum(4) INTO date
+              SEPARATED BY '.'.
+  CREATE OBJECT lr_grid.
+  l_text = 'Report CMT Movement' .
+  lr_grid->create_header_information(
+    row    = 1
+    column = 1
+    text    = l_text
+    tooltip = l_text ).
+  lr_grid->add_row( ).
+  lr_grid_1 = lr_grid->create_grid(
+                row    = 5
+                column = 1 ).
+  lr_label = lr_grid_1->create_label(
+    row     = 1
+    column  = 1
+    text    = 'Operations'
+    tooltip = 'Operations' ).
+  lr_text = lr_grid_1->create_text(
+    row     = 2
+    column  = 1
+    text    = 'Double Click on "KK Sub" to show details of Goods Issue & Return In.'
+    tooltip = 'Double Click on "KK Sub" to show details of Goods Issue & Return In.' ).
+  lr_text = lr_grid_1->create_text(
+    row     = 3
+    column  = 1
+    text    = 'Double Click on "QTY GR PO" to show details of Goods Receive by PO.'
+    tooltip = 'Double Click on "QTY GR PO" to show details of Goods Receive by PO.' ).
+  lr_text = lr_grid_1->create_text(
+    row     = 4
+    column  = 1
+    text    = 'Double Click on "QTY GR SJ" to show details of Goods Receive by SJ.'
+    tooltip = 'Double Click on "QTY GR SJ" to show details of Goods Receive by SJ.' ).
+  lr_label->set_label_for( lr_text ).
+  lr_label = lr_grid_1->create_label(
+    row    = 5
+    column = 1
+    text    = 'Date'
+    tooltip = 'Date' ).
+*  l_text = 'today'.
+  lr_text = lr_grid_1->create_text(
+    row    = 6
+    column = 1
+    text    = date
+    tooltip = date ).
+  lr_label->set_label_for( lr_text ).
+  cr_content = lr_grid.
+ENDFORM.                    " built_header
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*& Form F_HIDE_COLUMNS
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      <--P_LO_COLUMNS  text
+*&---------------------------------------------------------------------*
+FORM f_custom_columns3 CHANGING co_columns TYPE REF TO cl_salv_columns_table.
+
+  DATA: lo_column  TYPE REF TO cl_salv_column_table.
+
+  DEFINE m_set_visible.
+    lo_column ?= co_columns->get_column( &1 ).
+    lo_column->set_visible( value = &2 ).
+  END-OF-DEFINITION.
+
+  DEFINE m_set_text.
+    lo_column ?= co_columns->get_column( &1 ).
+    lo_column->set_short_text( &2 ).
+    lo_column->set_medium_text( &2 ).
+    lo_column->set_long_text( &2 ).
+  END-OF-DEFINITION.
+
+
+
+  IF v_report = ' '.                    " Main Display
+    m_set_text 'ZKP' 'KP No'.
+    m_set_text 'KWMENG' 'QTY KP'.
+    m_set_text 'ZKS' 'KK Sub'.
+    m_set_text 'ZNAME1V' 'Vendor'.
+    m_set_text 'QTYKK' 'QTY KK'.
+    m_set_text 'ZPRICE' 'Price'.
+    m_set_text 'CURR' 'Curr'.
+    m_set_text 'VKK' 'Value KK'.
+    m_set_text 'ZKKPO' 'No PO'.
+    m_set_text 'ERFMG' 'QTY GR PO'.
+    m_set_text 'QTYSJ' 'QTY GR SJ'.
+    m_set_text 'VAR' 'Var GR'.
+    m_set_text  'SKK' 'Status KK'.
+    m_set_text  'ZKKBC' 'KKBC'.
+    m_set_text 'ZKK' 'KK Master'.
+    m_set_text  'MATNR' 'Material'.
+    m_set_text 'ZUNIT' 'UoM'.
+*    m_set_text 'ACTKK' 'Act Cons'.
+*    m_set_text 'QTYP' 'QTY Hitung'.
+    m_set_text 'TOTC' 'Req Cons'.
+    m_set_text 'GI' 'GI CMT/261'.
+    m_set_text  'RI' 'QTY RI/262'.
+    m_set_text  'TOT' 'TotGI Akhr'.
+    m_set_text  'BALQTY' 'Bal. QTY'.
+    m_set_text  'MEINS' 'Unit'.
+
+  ELSEIF v_report = '1'.                     " Double Click KK
+    m_set_text 'ZKKSUB' 'KK Sub'.
+    m_set_text 'MATNR' 'Material'.
+    m_set_text 'UOM' 'UoM'.
+    m_set_text 'MATDOC' 'Matdoc'.
+    m_set_text 'QTY' 'QTY'.
+    m_set_text 'BUDAT' 'Post. Date'.
+    m_set_text 'BLDAT' 'Doc. Date'.
+    m_set_text 'ZBCTYPE' 'BC TYPE'.
+    m_set_text 'ZBCDOC' 'BC NO'.
+    m_set_text 'ZBCDATE' 'BC DATE'.
+    m_set_text 'MBLNR_R' 'Matdoc RI'.
+    m_set_text 'MENGE_R' 'QTY RI'.
+    m_set_text 'BUDATR' 'Pos.DateRI'.
+    m_set_text 'BLDATR' 'Doc.DateRI'.
+    m_set_text 'ZBCTYPE2' 'BC TYPE RI'.
+    m_set_text 'ZBCDOC2' 'BC NO RI'.
+    m_set_text 'ZBCDATE2' 'BC DateRI'.
+    m_set_text 'XBLNR' 'NO SJ RI'.
+
+  ELSEIF v_report = '2'.                    " Double click GR po
+    m_set_text 'EBELN' 'No PO'.
+    m_set_text 'MBLNR' 'Matdoc GR'.
+    m_set_text 'BUDAT' 'Post.Date'.
+    m_set_text 'XBLNR' 'NO SJ'.
+    m_set_text 'ERFMG' 'QTY'.
+    m_set_text 'MEINS' 'UoM'.
+
+  ELSE.                                   " Double click SJ
+    m_set_text 'BKTXT' 'KK Master'.
+    m_set_text 'MBLNR' 'Matdoc SJ'.
+    m_set_text 'BUDAT' 'Post.Date'.
+    m_set_text 'XBLNR' 'No SJ'.
+    m_set_text 'ERFMG' 'QTY'.
+    m_set_text 'MEINS' 'UoM'.
+    m_set_text 'BWART' 'Mov.Type'.
+    m_set_text 'ZBCTYPE' 'BC TYPE'.
+    m_set_text 'ZBCDOC' 'BC NO'.
+    m_set_text 'ZBCDATE' 'BC DATE'.
+
+  ENDIF.
+
+ENDFORM.
+
+FORM get_data4.
+
+
+*   select k~zkk, k~zkp, s~zks, k~zstyle, s~zkkbc, h~zkkpo, h~werks, h~zname1v into table @it_kkk
+*   FROM zmmtb_kk_kp AS k
+*   inner join zmmtb_kk_hdr as h on k~zkk = h~zkk
+*   left OUTER JOIN zmmtb_ks_hdr as s on h~zkk = s~zkk
+*   WHERE k~zkk IN @s_zkk AND
+*          k~zstyle IN @s_zstyle AND
+*          k~zkp IN @s_zkp AND
+*          s~zks in @s_zks and
+*          h~werks IN @s_werks AND "k~zqtysnd > 0 AND
+*          h~zname1v IN @s_zname and
+*          s~zkkbc in @s_zkkbc.
+
+
+  SELECT k~zkk k~zkp k~zks k~zstyle s~zkkbc h~zkkpo h~werks h~zname1v INTO TABLE it_kkk
+    FROM zmmtb_ks_kp AS k
+    INNER JOIN zmmtb_kk_hdr AS h ON k~zkk = h~zkk
+    INNER JOIN zmmtb_ks_hdr AS s ON k~zks = s~zks
+         WHERE k~zkk IN s_zkk AND
+         k~zstyle IN s_zstyle AND
+         k~zkp IN s_zkp AND
+         k~zks IN s_zks AND
+         h~werks IN s_werks AND "k~zqtysnd > 0 AND
+         h~zname1v IN s_zname AND
+         s~zkkbc IN s_zkkbc.
+
+  IF it_kkk[] IS NOT INITIAL.
+
+    LOOP AT it_kkk INTO wa_kkk.
+      wa_sub-zks  = wa_kkk-zks.
+      APPEND wa_sub TO it_sub.
+    ENDLOOP.
+    CLEAR wa_sub.
+
+    SELECT m~mblnr m~meins m~menge m~bwart m~cancelled m~bktxt m~matbf m~xblnr m~budat t~maktx h~zbctype h~zbcdoc h~zbcdate
+      INTO TABLE it_doc
+      FROM matdoc AS m
+      INNER JOIN makt AS t ON m~matbf = t~matnr
+      INNER JOIN zmmtb_hmigo AS h ON m~mblnr = h~mblnr
+      FOR ALL ENTRIES IN it_sub
+      WHERE m~bktxt = it_sub-zks
+      AND m~cancelled = ' '
+      AND m~bwart = '905'.
+
+
+    SELECT lifnr name1 INTO TABLE it_vnd
+      FROM lfa1
+      FOR ALL ENTRIES IN it_kkk
+      WHERE lifnr = it_kkk-zname1v.
+
+  ENDIF.
+
+
+
+
+
+ENDFORM.
+
+
+FORM proses_data4.
+
+  LOOP AT it_doc INTO wa_doc.
+    wa_doc2-bktxt = wa_doc-bktxt.
+    wa_doc2-menge = wa_doc-menge.
+    wa_doc2-meins = wa_doc-meins.
+    wa_doc2-maktx = wa_doc-maktx.
+    COLLECT wa_doc2 INTO it_doc2.
+  ENDLOOP.
+
+
+  LOOP AT it_doc2 INTO wa_doc2.
+
+    wa_scrap-zks     = wa_doc2-bktxt.
+    wa_scrap-menge   = wa_doc2-menge.
+    wa_scrap-meins   = wa_doc2-meins.
+    wa_scrap-maktx   = wa_doc2-maktx.
+
+    READ TABLE it_kkk INTO wa_kkk WITH KEY zks = wa_doc2-bktxt.
+    IF sy-subrc EQ 0.
+      wa_scrap-zkp   = wa_kkk-zkp.
+      wa_scrap-zkk   = wa_kkk-zkk.
+      wa_scrap-zkkbc = wa_kkk-zkkbc.
+      wa_scrap-zkkpo = wa_kkk-zkkpo.
+    ENDIF.
+
+    READ TABLE it_vnd INTO wa_vnd WITH KEY lifnr = wa_kkk-zname1v.
+    IF sy-subrc EQ 0.
+      wa_scrap-vnd = wa_vnd-name1.
+    ENDIF.
+
+    APPEND wa_scrap TO it_scrap.
+    CLEAR wa_scrap.
+  ENDLOOP.
+
+  LOOP AT it_doc INTO wa_doc.
+
+    wa_scrapdtl-mblnr   = wa_doc-mblnr.
+    wa_scrapdtl-xblnr   = wa_doc-xblnr.
+    wa_scrapdtl-budat   = wa_doc-budat.
+    wa_scrapdtl-zbctype = wa_doc-zbctype.
+    wa_scrapdtl-zbcdoc  = wa_doc-zbcdoc.
+    wa_scrapdtl-zbcdate = wa_doc-zbcdate.
+    wa_scrapdtl-menge   = wa_doc-menge.
+    wa_scrapdtl-meins   = wa_doc-meins.
+    wa_scrapdtl-bktxt   = wa_doc-bktxt.
+
+    APPEND wa_scrapdtl TO it_scrapdtl.
+    CLEAR wa_scrapdtl.
+  ENDLOOP.
+
+
+
+ENDFORM.
+
+
+
+
+FORM f_display_data4.
+
+  DATA: lo_alv       TYPE REF TO cl_salv_table,
+        lx_msg       TYPE REF TO cx_salv_msg,
+        ls_msg       TYPE bal_s_msg,
+        lo_functions TYPE REF TO cl_salv_functions_list,
+        lo_layout    TYPE REF TO cl_salv_layout,
+        ls_key       TYPE salv_s_layout_key,
+        lo_display   TYPE REF TO cl_salv_display_settings,
+        lo_selection TYPE REF TO cl_salv_selections,
+        lo_column    TYPE REF TO cl_salv_column_table,
+        lo_columns   TYPE REF TO cl_salv_columns_table.
+
+* Data for top of page
+  DATA: lr_content TYPE REF TO cl_salv_form_element.
+
+  DATA: lo_events TYPE REF TO cl_salv_events_table.
+  IF v_report = ' '.
+    TRY.
+        cl_salv_table=>factory( IMPORTING r_salv_table = lo_alv
+                                CHANGING  t_table      = it_scrap ).
+
+*  Display header (top of page)
+        PERFORM built_header4  CHANGING lr_content.
+        lo_alv->set_top_of_list( lr_content ).
+        DATA: lr_events TYPE REF TO cl_salv_events_table.
+        lr_events = lo_alv->get_event( ).
+        CREATE OBJECT gr_events.
+        SET HANDLER gr_events->top_of_page FOR lr_events.
+
+      CATCH cx_salv_msg INTO lx_msg .
+        ls_msg = lx_msg->get_message( ).
+        MESSAGE ID ls_msg-msgid TYPE 'S' NUMBER ls_msg-msgno
+          WITH ls_msg-msgv1 ls_msg-msgv2 ls_msg-msgv3 ls_msg-msgv4
+          DISPLAY LIKE 'E'.
+        LEAVE LIST-PROCESSING.
+    ENDTRY.
+  ELSE.
+    TRY.
+        cl_salv_table=>factory( IMPORTING r_salv_table = lo_alv
+                                CHANGING  t_table      = it_scrapdtl_d ).
+      CATCH cx_salv_msg INTO lx_msg .
+        ls_msg = lx_msg->get_message( ).
+        MESSAGE ID ls_msg-msgid TYPE 'S' NUMBER ls_msg-msgno
+          WITH ls_msg-msgv1 ls_msg-msgv2 ls_msg-msgv3 ls_msg-msgv4
+          DISPLAY LIKE 'E'.
+        LEAVE LIST-PROCESSING.
+    ENDTRY.
+
+  ENDIF.
+  lo_functions = lo_alv->get_functions( ).
+  lo_functions->set_all( abap_true ).
+
+  "enable control layout
+  ls_key-report = sy-repid.
+  lo_layout = lo_alv->get_layout( ).
+  lo_layout->set_key( ls_key ).
+  lo_layout->set_default( abap_true ).
+  lo_layout->set_save_restriction( cl_salv_layout=>restrict_none ).
+
+
+  "config stripped display
+  lo_display = lo_alv->get_display_settings( ).
+  lo_display->set_striped_pattern( cl_salv_display_settings=>true ).
+
+  "multi rows selection
+  lo_selection = lo_alv->get_selections( ).
+  lo_selection->set_selection_mode( if_salv_c_selection_mode=>multiple ).
+
+  "optimize columns width
+  lo_columns = lo_alv->get_columns( ).
+  lo_columns->set_optimize( ).
+
+  FIELD-SYMBOLS : <field> TYPE any.
+
+
+  PERFORM f_custom_columns4 CHANGING lo_columns.
+
+*// 2. Set the Color Column to the ALV
+
+* additional double click
+  lo_events = lo_alv->get_event( ).
+  CREATE OBJECT event_handler.
+  SET HANDLER event_handler->on_double_click FOR lo_events.
+
+  lo_alv->display( ).
+
+ENDFORM.
+
+
+FORM built_header4 CHANGING cr_content TYPE REF TO cl_salv_form_element.
+  DATA: lr_grid   TYPE REF TO cl_salv_form_layout_grid,
+        lr_grid_1 TYPE REF TO cl_salv_form_layout_grid,
+        lr_label  TYPE REF TO cl_salv_form_label,
+        lr_text   TYPE REF TO cl_salv_form_text,
+        l_text    TYPE string,
+        date(60)  TYPE c.
+  CONCATENATE sy-datum+6(2)
+              sy-datum+4(2)
+              sy-datum(4) INTO date
+              SEPARATED BY '.'.
+  CREATE OBJECT lr_grid.
+  l_text = 'Report Sisa Potongan Kain (Scrap)' .
+  lr_grid->create_header_information(
+    row    = 1
+    column = 1
+    text    = l_text
+    tooltip = l_text ).
+  lr_grid->add_row( ).
+  lr_grid_1 = lr_grid->create_grid(
+                row    = 3
+                column = 1 ).
+  lr_label = lr_grid_1->create_label(
+    row     = 1
+    column  = 1
+    text    = 'Operation'
+    tooltip = 'Operation' ).
+  lr_text = lr_grid_1->create_text(
+    row     = 2
+    column  = 1
+    text    = 'Double Click on "QTY GR" to show details of Goods Recieve '
+    tooltip = 'Double Click on "QTY GR" to show details of Goods Receive' ).
+  lr_label = lr_grid_1->create_label(
+    row    = 3
+    column = 1
+    text    = 'Date'
+    tooltip = 'Date' ).
+*  l_text = 'today'.
+  lr_text = lr_grid_1->create_text(
+    row    = 4
+    column = 1
+    text    = date
+    tooltip = date ).
+  lr_label->set_label_for( lr_text ).
+  cr_content = lr_grid.
+ENDFORM.                    " built_header
+
+
+
+
+*&---------------------------------------------------------------------*
+*& Form F_HIDE_COLUMNS
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      <--P_LO_COLUMNS  text
+*&---------------------------------------------------------------------*
+FORM f_custom_columns4 CHANGING co_columns TYPE REF TO cl_salv_columns_table.
+
+  DATA: lo_column  TYPE REF TO cl_salv_column_table.
+
+  DEFINE m_set_visible.
+    lo_column ?= co_columns->get_column( &1 ).
+    lo_column->set_visible( value = &2 ).
+  END-OF-DEFINITION.
+
+  DEFINE m_set_text.
+    lo_column ?= co_columns->get_column( &1 ).
+    lo_column->set_short_text( &2 ).
+    lo_column->set_medium_text( &2 ).
+    lo_column->set_long_text( &2 ).
+  END-OF-DEFINITION.
+
+
+
+  IF v_report = ' '.
+    m_set_text 'ZKP' 'KP No'.
+    m_set_text 'VND' 'Vendor'.
+    m_set_text 'ZKK' 'KK Master'.
+    m_set_text 'ZKS' 'KK Sub'.
+    m_set_text 'ZKKBC' 'KKBC'.
+    m_set_text 'ZKKPO' 'PO No'.
+    m_set_text 'MAKTX' 'Material'.
+    m_set_text 'MEINS' 'UoM'.
+    m_set_text 'MENGE' 'QTY GR'.
+
+  ELSE.
+    m_set_text 'MBLNR' 'Matdoc GR'.
+    m_set_text 'XBLNR' 'No SJ'.
+    m_set_text 'BUDAT' 'Post.Date'.
+    m_set_text 'ZBCTYPE' 'BC Type'.
+    m_set_text 'ZBCDOC' 'BC No'.
+    m_set_text 'ZBCDATE' 'BC Date'.
+    m_set_text 'MENGE' 'QTY GR'.
+    m_set_text 'MEINS' 'UoM'.
+    m_set_text 'BKTXT' 'NO KK SUB'.
+
+  ENDIF.
+
+ENDFORM.
