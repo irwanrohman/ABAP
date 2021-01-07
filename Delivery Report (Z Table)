@@ -1,0 +1,1604 @@
+
+*& ---------------------------------------------------------------------*
+*& Report ZTEST_REM
+*& Requested By Agus-Shipping (Pak Anggi)---------------------------------------------------------------------*
+*& Designed By Irwan
+*&---------------------------------------------------------------------*
+REPORT ztest_rem.
+
+
+TABLES : likp,vttp,zsdtb_pebhdr,zsdtb_pebinv,vttk,vbrk,vbrp,lips,vbkd.
+TYPE-POOLS : slis.
+
+*DATA :
+
+TYPES : BEGIN OF ty_text,
+          text(30000) TYPE c,
+        END OF ty_text.
+
+TYPES: BEGIN OF gs_report_rem,
+         wadat_ist  TYPE likp-wadat_ist,
+         tknum      TYPE vttp-tknum,
+         tgdaft     TYPE zsdtb_pebhdr-tgdaft,
+         nodaft     TYPE zsdtb_pebhdr-nodaft,
+         car        TYPE zsdtb_pebhdr-car,
+         invoice_no TYPE zsdtb_pebinv-invoice_no,
+         vbeln      TYPE vttp-vbeln,
+         fkimg      TYPE vbrp-fkimg,
+         vgbel      TYPE vbrp-vgbel,
+         s_pcs(10)  TYPE p,
+         vbeln1     TYPE vbrp-vbeln,
+         aupos      TYPE vbrp-aupos,
+         aubel      TYPE vbrp-aubel,
+         bstkd      TYPE vbkd-bstkd,
+         matnr      TYPE mara-matnr,
+         posnr      TYPE vbkd-posnr,
+         vgbel1     TYPE lips-vbelv,
+         landx      TYPE t005t-landx,
+         plant(10)  TYPE c,
+         buyer(30)  TYPE c,
+         moda       TYPE t173t-bezei,
+         inco       TYPE likp-inco2_l,
+         price2%    TYPE vbap-netpr,
+         price100   TYPE vbap-cmpre,
+         bill       TYPE vbrp-netwr,
+         bill100    TYPE vbrp-kzwi1,
+         wh(20)     TYPE c,
+         vesel(20)  TYPE c,
+         fwd        TYPE lfa1-name1,
+         truck(30)  TYPE c,
+         vrkme      TYPE vbrp-vrkme,
+         budat      TYPE mkpf-budat,
+         add01      TYPE vttk-add01, "remark"
+         text1      TYPE vttk-text1,  "lcl"
+         text2      TYPE vttk-text2,  "20"
+         text3      TYPE vttk-text3,  "40"
+         text4      TYPE vttk-text4,  "40h"
+         anzpk      TYPE likp-anzpk,
+         volum      TYPE likp-volum,
+         dtdis      TYPE vttk-dtdis,
+         waerk      TYPE vbap-waerk,
+         kunag      TYPE likp-kunag,
+         cpudt      TYPE mkpf-cpudt,
+         truckno    TYPE vttk-zztrckno,  " No Truck updated 240720
+         "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+         etd_dat    TYPE sy-datum,
+         zzbl_no    TYPE vbrk-zzbl_no,
+         zzbl_dat   TYPE vbrk-zzbl_dat,
+         arktx      TYPE vbrp-arktx,
+         price96    TYPE vbap-netpr,
+         totamt96   TYPE vbrp-netwr,
+         kunnr      TYPE vbpa-kunnr,
+         auart      TYPE vbak-auart,
+         hs         TYPE zsdtb_pebdtl-hs,
+         namabeli   TYPE zsdtb_pebhdr-namabeli,
+         pelmuat    TYPE zsdtb_pebhdr-pelmuat,
+         "End of Updating (20200904 - Add Some Fields)
+       END OF gs_report_rem.
+
+TYPES :
+  BEGIN OF gs_vbrk,
+    vbeln TYPE vbrk-vbeln,
+    fkart TYPE vbrk-fkart,
+    fksto TYPE vbrk-fksto,
+
+  END OF gs_vbrk,
+
+  BEGIN OF gs_vbrp,
+    fkimg    TYPE vbrp-fkimg,
+    vgbel    TYPE vbrp-vgbel,
+    vbeln    TYPE vbrp-vbeln,
+    aubel    TYPE vbrp-aubel,
+    aupos    TYPE vbrp-aupos,
+    netwr    TYPE vbrp-netwr,
+    vrkme    TYPE vbrp-vrkme,
+    waerk    TYPE vbrp-waerk,
+    "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+    zzbl_no  TYPE vbrk-zzbl_no,
+    zzbl_dat TYPE vbrk-zzbl_dat,
+    arktx    TYPE vbrp-arktx,
+    "End of Updating (20200904 - Add Some Fields)
+  END OF gs_vbrp,
+
+  BEGIN OF gs_vbrp2,
+    vgbel    TYPE vbrp-vgbel,
+    vbeln    TYPE vbrp-vbeln,  "BILLING"
+    aubel    TYPE vbrp-aubel,  "KP"
+    netwr    TYPE vbrp-netwr,  "NET VALUE"
+    waerk    TYPE vbrp-waerk,
+    "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+    zzbl_no  TYPE vbrk-zzbl_no,
+    zzbl_dat TYPE vbrk-zzbl_dat,
+    arktx    TYPE vbrp-arktx,
+    "End of Updating (20200904 - Add Some Fields)
+  END OF gs_vbrp2,
+
+
+  BEGIN OF gs_mkpf,
+    mblnr    TYPE mkpf-mblnr,
+    budat    TYPE mkpf-budat,
+    tcode2   TYPE mkpf-tcode2,
+    le_vbeln TYPE mkpf-le_vbeln,
+    cpudt    TYPE mkpf-cpudt,
+  END OF gs_mkpf,
+
+  BEGIN OF gs_lfa1,
+    lifnr TYPE lfa1-lifnr,
+    name  TYPE lfa1-name1,
+  END OF gs_lfa1,
+
+  BEGIN OF gs_lfa2,
+    lifnr TYPE lfa1-lifnr,
+    name  TYPE lfa1-name1,
+  END OF gs_lfa2,
+
+  BEGIN OF gs_vtts,
+    tknum TYPE vtts-tknum,
+    tsnum TYPE vtts-tsnum,
+    tdlnr TYPE vtts-tdlnr,
+  END OF gs_vtts,
+
+  BEGIN OF gs_vbap,
+    vbeln TYPE vbap-vbeln,
+    netpr TYPE vbap-netpr,
+    posnr TYPE vbap-posnr,
+    waerk TYPE vbap-waerk,
+    matnr TYPE vbap-matnr,
+    auart TYPE vbak-auart, "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+  END OF gs_vbap,
+
+  BEGIN OF gs_tvgrt,
+    vkgrp TYPE tvgrt-vkgrp,
+    bezei TYPE tvgrt-bezei,
+  END OF gs_tvgrt,
+
+  BEGIN OF gs_vttk,
+    tknum      TYPE vttk-tknum,
+    tplst      TYPE vttk-tplst,
+    vsart      TYPE vttk-vsart,
+    zzvsslname TYPE vttk-zzvsslname,
+    zzvygno    TYPE vttk-zzvygno,
+    tdlnr      TYPE vttk-tdlnr,
+    add01      TYPE vttk-add01,
+    text1      TYPE vttk-text1,
+    text2      TYPE vttk-text2,
+    text3      TYPE vttk-text3,
+    text4      TYPE vttk-text4,
+    dtdis      TYPE vttk-dtdis,
+    zztrckno   TYPE vttk-zztrckno, " No Truck updated 240720
+
+  END OF gs_vttk,
+
+  BEGIN OF gs_vttk2,
+    tknum      TYPE vttk-tknum,
+    tplst      TYPE vttk-tplst,
+    vsart      TYPE vttk-vsart,
+    zzvsslname TYPE vttk-zzvsslname,
+    zzvygno    TYPE vttk-zzvygno,
+    tdlnr      TYPE vttk-tdlnr,
+    add01      TYPE vttk-add01,
+    text1      TYPE vttk-text1,
+    text2      TYPE vttk-text2,
+    text3      TYPE vttk-text3,
+    text4      TYPE vttk-text4,
+    dtdis      TYPE vttk-dtdis,
+    zztrckno   TYPE vttk-zztrckno, " No Truck updated 240720
+
+  END OF gs_vttk2,
+
+  BEGIN OF gs_kna1,
+    kunnr TYPE kna1-kunnr,
+    land1 TYPE kna1-land1,
+  END OF gs_kna1,
+
+
+  BEGIN OF gs_mara,
+    zmatgen TYPE mara-zmatgen,
+    matnr   TYPE mara-matnr,
+    vkgrp   TYPE mara-vkgrp,
+    maktx   TYPE makt-maktx, "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+  END OF gs_mara,
+
+  BEGIN OF gs_lips,
+    vbeln TYPE lips-vbeln,
+    vgbel TYPE lips-vgbel,
+    vgpos TYPE lips-vgpos,
+    matnr TYPE lips-matnr,
+    pstyv TYPE lips-pstyv,
+    lfimg TYPE lips-lfimg,
+    posnr TYPE lips-posnr,
+
+  END OF gs_lips,
+
+
+  BEGIN OF gs_lips3,
+    vbeln TYPE lips-vbeln,
+    vgbel TYPE lips-vgbel,
+    lfimg TYPE lips-lfimg,
+    vgpos TYPE lips-vgpos,
+    matnr TYPE lips-matnr,
+  END OF gs_lips3,
+
+
+  BEGIN OF gs_vbkd,
+    vbeln TYPE vbkd-vbeln,
+    bstkd TYPE vbkd-bstkd,
+    posnr TYPE vbkd-posnr,
+  END OF gs_vbkd,
+
+  BEGIN OF gs_vbkd2,
+    vbeln TYPE vbkd-vbeln,
+    bstkd TYPE vbkd-bstkd,
+  END OF gs_vbkd2,
+
+  BEGIN OF gs_t005t,
+    landx TYPE t005t-landx,
+    land1 TYPE t005t-land1,
+  END OF gs_t005t,
+
+
+  BEGIN OF gs_likp1,
+    wadat_ist TYPE likp-wadat_ist,
+    kunnr     TYPE likp-kunnr,
+    vbeln     TYPE likp-vbeln,
+    inco2_l   TYPE likp-inco2_l,
+    vstel     TYPE likp-vstel,
+    vkorg     TYPE likp-vkorg,
+    lfart     TYPE likp-lfart,
+    volum     TYPE likp-volum,
+    anzpk     TYPE likp-anzpk,
+    kunag     TYPE likp-kunag,
+  END OF gs_likp1,
+
+
+  BEGIN OF gs_likp,
+    wadat_ist TYPE likp-wadat_ist,
+    kunnr     TYPE likp-kunnr,
+    vbeln     TYPE likp-vbeln,
+    inco2_l   TYPE likp-inco2_l,
+    vstel     TYPE likp-vstel,
+    vkorg     TYPE likp-vkorg,
+    lfart     TYPE likp-lfart,
+    volum     TYPE likp-volum,
+    anzpk     TYPE likp-anzpk,
+    kunag     TYPE likp-kunag,
+  END OF gs_likp,
+
+  BEGIN OF gs_vttp,
+    tknum TYPE vttp-tknum,
+    vbeln TYPE vttp-vbeln,
+    tpnum TYPE vttp-tpnum, "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+  END OF gs_vttp,
+
+  BEGIN OF gs_t173t,
+    vsart TYPE t173t-vsart,
+    bezei TYPE t173t-bezei,
+  END OF gs_t173t,
+
+  BEGIN OF gs_knvv,
+    kunnr TYPE knvv-kunnr,
+    bzirk TYPE knvv-bzirk,
+  END OF gs_knvv,
+
+  BEGIN OF gs_t171t,
+    bzirk TYPE t171t-bzirk,
+    bztxt TYPE t171t-bztxt,
+
+  END OF gs_t171t,
+
+
+  BEGIN OF gs_zsdtb_pebhdr,
+    tgdaft   TYPE zsdtb_pebhdr-tgdaft,
+    nodaft   TYPE zsdtb_pebhdr-nodaft,
+    car      TYPE zsdtb_pebhdr-car,
+    tknum    TYPE zsdtb_pebhdr-tknum,
+    "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+    namabeli TYPE zsdtb_pebhdr-namabeli,
+    pelmuat  TYPE zsdtb_pebhdr-pelmuat,
+    "End of Updating (20200904 - Add Some Fields)
+  END OF gs_zsdtb_pebhdr,
+
+  BEGIN OF gs_zsdtb_pebinv,
+    invoice_no TYPE zsdtb_pebinv-invoice_no,
+    tknum      TYPE zsdtb_pebinv-tknum,
+  END OF gs_zsdtb_pebinv.
+
+"20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+TYPES: BEGIN OF gs_zsdtb_pebdtl,
+         tknum   TYPE zsdtb_pebdtl-tknum,
+         seribrg TYPE zsdtb_pebdtl-seribrg,
+         hs      TYPE zsdtb_pebdtl-hs,
+       END OF gs_zsdtb_pebdtl.
+"End of Updating (20200904 - Add Some Fields)
+
+DATA: it_report_rem   TYPE STANDARD TABLE OF gs_report_rem,
+      wa_report_rem   TYPE gs_report_rem,
+      it_likp         TYPE STANDARD TABLE OF gs_likp WITH HEADER LINE,
+      wa_likp         TYPE gs_likp,
+      it_vttp         TYPE STANDARD TABLE OF gs_vttp WITH HEADER LINE,
+      wa_vttp         TYPE gs_vttp,
+      it_zsdtb_pebhdr TYPE STANDARD TABLE OF gs_zsdtb_pebhdr WITH HEADER LINE,
+      wa_zsdtb_pebhdr TYPE                   gs_zsdtb_pebhdr,
+      it_zsdtb_pebinv TYPE STANDARD TABLE OF gs_zsdtb_pebinv WITH HEADER LINE,
+      wa_zsdtb_pebinv TYPE                   gs_zsdtb_pebinv,
+      gt_zsdtb_pebdtl TYPE STANDARD TABLE OF gs_zsdtb_pebdtl WITH HEADER LINE, "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+      it_vbrp         TYPE STANDARD TABLE OF gs_vbrp WITH HEADER LINE,
+      wa_vbrp         TYPE gs_vbrp,
+      s_pcs(10)       TYPE p,
+      it_vbkd         TYPE STANDARD TABLE OF gs_vbkd WITH HEADER LINE,
+      wa_vbkd         TYPE gs_vbkd,
+      it_lips         TYPE STANDARD TABLE OF gs_lips WITH HEADER LINE,
+      wa_lips         TYPE gs_lips,
+      it_mara         TYPE STANDARD TABLE OF gs_mara WITH HEADER LINE,
+      wa_mara         TYPE gs_mara,
+      it_t005t        TYPE STANDARD TABLE OF gs_t005t WITH HEADER LINE,
+      wa_t005t        TYPE gs_t005t,
+      it_kna1         TYPE STANDARD TABLE OF gs_kna1 WITH HEADER LINE,
+      wa_kna1         TYPE gs_kna1,
+      it_vttk         TYPE STANDARD TABLE OF gs_vttk WITH HEADER LINE,
+      wa_vttk         TYPE gs_vttk,
+      it_tvgrt        TYPE STANDARD TABLE OF gs_tvgrt WITH HEADER LINE,
+      wa_tvgrt        TYPE gs_tvgrt,
+      it_t173t        TYPE STANDARD TABLE OF gs_t173t WITH HEADER LINE,
+      wa_t173t        TYPE gs_t173t,
+      it_vbap         TYPE STANDARD TABLE OF gs_vbap WITH HEADER LINE,
+      wa_vbap         TYPE gs_vbap,
+      it_knvv         TYPE STANDARD TABLE OF gs_knvv WITH HEADER LINE,
+      wa_knvv         TYPE gs_knvv,
+      it_t171t        TYPE STANDARD TABLE OF gs_t171t WITH HEADER LINE,
+      wa_t171t        TYPE gs_t171t,
+      it_vtts         TYPE STANDARD TABLE OF gs_vtts WITH HEADER LINE,
+      wa_vtts         TYPE gs_vtts,
+      it_lfa1         TYPE STANDARD TABLE OF gs_lfa1 WITH HEADER LINE,
+      wa_lfa1         TYPE gs_lfa1,
+      it_lfa2         TYPE STANDARD TABLE OF gs_lfa2 WITH HEADER LINE,
+      wa_lfa2         TYPE gs_lfa2,
+      it_mkpf         TYPE STANDARD TABLE OF gs_mkpf WITH HEADER LINE,
+      wa_mkpf         TYPE gs_mkpf,
+      it_vttk2        TYPE STANDARD TABLE OF gs_vttk2 WITH HEADER LINE,
+      wa_vttk2        TYPE gs_vttk2,
+      it_likp1        TYPE STANDARD TABLE OF gs_likp1 WITH HEADER LINE,
+      wa_likp1        TYPE gs_likp1,
+      it_lips2        TYPE STANDARD TABLE OF gs_lips WITH HEADER LINE,
+      wa_lips2        TYPE gs_lips,
+      it_lips3        TYPE STANDARD TABLE OF gs_lips3 WITH HEADER LINE,
+      wa_lips3        TYPE gs_lips3,
+      it_vbkd2        TYPE STANDARD TABLE OF gs_vbkd2 WITH HEADER LINE,
+      wa_vbkd2        TYPE gs_vbkd2,
+      it_vbrp2        TYPE STANDARD TABLE OF gs_vbrp2 WITH HEADER LINE,
+      wa_vbrp2        TYPE gs_vbrp2,
+      it_vbrp3        TYPE STANDARD TABLE OF gs_vbrp WITH HEADER LINE, " UPDATING NUMBER ITEM
+      wa_vbrp3        TYPE gs_vbrp,                                    " END OF UPDATING
+*STANDARD LAYOUT OF SAP
+      gw_layout       TYPE slis_layout_alv,
+      gt_cat          TYPE slis_t_fieldcat_alv,
+      gw_cat          TYPE slis_fieldcat_alv,
+      gt_event        TYPE slis_t_event,
+      gw_event        TYPE slis_alv_event,
+      gt_sort         TYPE slis_t_sortinfo_alv,
+      gw_sort         TYPE slis_sortinfo_alv,
+      gt_text         TYPE TABLE OF ty_text,
+      gw_text         TYPE ty_text.
+"======================selection screen================================="
+SELECTION-SCREEN BEGIN OF BLOCK a WITH FRAME TITLE TEXT-002.
+PARAMETERS :
+  p_rad1 RADIOBUTTON GROUP rad DEFAULT 'X',   " Actual Shipment"
+  p_rad2 RADIOBUTTON GROUP rad.               " Checking"
+SELECTION-SCREEN END OF BLOCK a.
+
+SELECTION-SCREEN BEGIN OF BLOCK b WITH FRAME TITLE TEXT-001.
+SELECT-OPTIONS:
+     s_budat FOR likp-wadat_ist MODIF ID act,        "PGI date"
+     s_vstel FOR likp-vstel OBLIGATORY,
+     s_dtdis FOR vttk-dtdis MODIF ID mon,
+     s_lfart FOR likp-lfart,
+     s_kunag FOR likp-kunag.
+
+SELECTION-SCREEN END OF BLOCK b.
+
+
+"=====================end of selection screen=========================="
+
+AT SELECTION-SCREEN OUTPUT.
+  PERFORM hide_screeen.
+
+START-OF-SELECTION.
+
+
+  IF p_rad1 = 'X' AND s_vstel[] IS NOT INITIAL AND s_dtdis[] IS NOT INITIAL.
+    MESSAGE s000(zmm) WITH 'Please only input in EXF DATE (ACTUAL)'.
+  ELSEIF p_rad1 = 'X'.
+    PERFORM get_data.
+    PERFORM proccess_data.
+    PERFORM display_data.
+  ELSEIF p_rad2 = 'X' AND s_vstel[] IS NOT INITIAL AND s_budat[] IS NOT INITIAL.
+    MESSAGE s000(zmm) WITH 'Please only input in INV DATE (MONITORING)'.
+  ELSEIF p_rad2 = 'X'.
+    PERFORM get_data2.
+    PERFORM proccess_data2.
+    PERFORM display_data.
+  ENDIF.
+
+
+
+  "=====================================Perform Act================================================"
+FORM get_data.
+
+  SELECT wadat_ist kunnr vbeln inco2_l vstel vkorg lfart volum anzpk kunag
+    INTO TABLE it_likp1
+    FROM likp
+    WHERE vstel IN s_vstel AND kunag IN s_kunag.
+
+  SELECT wadat_ist kunnr vbeln inco2_l vstel vkorg lfart volum anzpk kunag
+    INTO TABLE it_likp
+    FROM likp
+    FOR ALL ENTRIES IN it_likp1
+    WHERE vbeln = it_likp1-vbeln
+    AND  lfart IN s_lfart.                                   "( lfart = 'D031' OR lfart = 'D032').
+  IF it_likp[] IS NOT INITIAL.
+
+    SELECT mblnr budat tcode2 le_vbeln cpudt  INTO TABLE it_mkpf
+      FROM mkpf
+      FOR ALL ENTRIES IN it_likp
+      WHERE le_vbeln = it_likp-vbeln
+      AND tcode2 = 'VL02N'
+      AND budat IN s_budat.
+  ENDIF.
+  IF it_mkpf[] IS NOT INITIAL.
+
+    SELECT v~tknum v~vbeln
+           v~tpnum "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+      INTO TABLE it_vttp
+      FROM vttp AS v  JOIN mkpf AS l ON v~vbeln = l~le_vbeln
+      FOR ALL ENTRIES IN it_mkpf
+      WHERE v~vbeln = it_mkpf-le_vbeln.
+  ENDIF.
+
+  IF it_vttp[] IS NOT INITIAL.
+
+    SELECT i~invoice_no i~tknum
+      INTO TABLE it_zsdtb_pebinv
+      FROM zsdtb_pebinv AS i JOIN vttp AS v ON i~tknum = v~tknum
+      FOR ALL ENTRIES IN it_vttp
+      WHERE v~tknum = it_vttp-tknum.
+
+    SELECT p~tgdaft p~nodaft p~car p~tknum
+           p~namabeli p~pelmuat "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+      INTO TABLE it_zsdtb_pebhdr
+      FROM zsdtb_pebhdr AS p JOIN vttp AS v ON p~tknum = v~tknum
+      FOR ALL ENTRIES IN it_vttp
+      WHERE v~tknum = it_vttp-tknum.
+
+    "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+    SELECT a~tknum a~seribrg a~hs
+      FROM zsdtb_pebdtl AS a
+      INTO TABLE gt_zsdtb_pebdtl
+      FOR ALL ENTRIES IN it_vttp
+      WHERE tknum = it_vttp-tknum.
+    "End of Updating (20200904 - Add Some Fields)
+
+    SELECT b~fkimg b~vgbel b~vbeln b~aubel b~aupos b~netwr b~vrkme b~waerk
+           k~zzbl_no k~zzbl_dat b~arktx "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+      INTO TABLE it_vbrp
+      FROM vbrp AS b JOIN vttp AS v ON b~vgbel = v~vbeln
+                     JOIN vbrk AS k ON b~vbeln = k~vbeln
+      FOR ALL ENTRIES IN it_vttp
+      WHERE v~tknum = it_vttp-tknum
+      AND k~fkart <> 'B090'
+      AND k~fksto <> 'X'.
+
+*    SELECT fkimg vgbel vbeln aubel aupos netwr vrkme waerk   " Updating item 290520
+*    INTO TABLE it_vbrp3 FROM vbrp
+*    FOR ALL ENTRIES IN it_vbrp
+*    WHERE vbeln = it_vbrp-vbeln.                             " end of updating 290520
+
+
+    SELECT l~vbeln l~vgbel l~vgpos l~matnr l~pstyv l~lfimg l~posnr
+      INTO TABLE it_lips
+      FROM lips AS l JOIN vttp AS v ON l~vbeln  = v~vbeln
+      FOR ALL ENTRIES IN it_vttp
+      WHERE l~vbeln  = it_vttp-vbeln.
+
+    SELECT vbeln vgbel vgpos matnr pstyv lfimg posnr           " Updating no item KP 04/06/20
+       INTO TABLE it_lips2 FROM lips
+       FOR ALL ENTRIES IN it_lips
+       WHERE vbeln = it_lips-vbeln.                            " End of updating.
+
+
+    SELECT v~vbeln v~netpr v~posnr v~waerk v~matnr
+           k~auart "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+      INTO TABLE it_vbap
+      FROM vbap AS v
+        JOIN lips AS l ON v~vbeln = l~vgbel
+        JOIN vbak AS k ON k~vbeln = v~vbeln "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+      FOR ALL ENTRIES IN it_lips
+      WHERE v~vbeln = it_lips-vgbel AND v~posnr = it_lips-vgpos.
+
+    SELECT v~vbeln v~bstkd v~posnr
+      INTO TABLE it_vbkd
+      FROM vbkd AS v
+      JOIN lips AS l ON v~vbeln = l~vgbel
+      FOR ALL ENTRIES IN it_lips
+      WHERE v~vbeln = it_lips-vgbel AND v~posnr = l~vgpos.
+
+
+    SELECT m~zmatgen m~matnr m~vkgrp
+           t~maktx "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+      INTO TABLE it_mara
+      FROM mara AS m
+      JOIN vbap AS l ON m~matnr = l~matnr
+      JOIN makt AS t ON t~matnr = m~matnr "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+      FOR ALL ENTRIES IN it_vbap
+      WHERE m~matnr = it_vbap-matnr
+        AND t~spras EQ 'EN'. "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+
+    SELECT t~landx t~land1
+      INTO TABLE it_t005t
+      FROM t005t AS t JOIN kna1 AS k ON t~land1 = k~land1
+                  JOIN likp AS l ON l~kunnr = k~kunnr
+      FOR ALL ENTRIES IN it_vttp
+      WHERE l~vbeln = it_vttp-vbeln AND t~spras = 'EN'.
+
+    SELECT k~kunnr k~land1
+      INTO TABLE it_kna1
+      FROM kna1 AS k JOIN likp AS l ON k~kunnr = l~kunnr
+      FOR ALL ENTRIES IN it_vttp
+      WHERE l~vbeln = it_vttp-vbeln.
+
+    SELECT k~tknum k~tplst k~vsart k~zzvsslname k~zzvygno k~tdlnr k~add01 k~text1 k~text2 k~text3 k~text4 k~dtdis k~zztrckno
+      INTO TABLE it_vttk
+      FROM vttk AS k JOIN vttp AS p ON k~tknum = p~tknum
+      FOR ALL ENTRIES IN it_vttp
+      WHERE k~tknum = it_vttp-tknum.
+
+
+    SELECT s~vkgrp s~bezei
+      INTO TABLE it_tvgrt
+      FROM tvgrt AS s JOIN mara AS m ON s~vkgrp = m~vkgrp
+      FOR ALL ENTRIES IN it_lips
+      WHERE m~matnr = it_lips-matnr.
+
+    SELECT t~vsart t~bezei
+      INTO TABLE it_t173t
+      FROM t173t AS t JOIN vttk AS v ON t~vsart = v~vsart
+      FOR ALL ENTRIES IN it_vttk
+      WHERE v~tknum = it_vttk-tknum AND t~spras =  'EN'.
+
+
+    SELECT k~kunnr k~bzirk
+      INTO TABLE it_knvv
+      FROM knvv AS k JOIN likp AS l ON k~kunnr = l~kunnr
+      FOR ALL ENTRIES IN it_vttp
+      WHERE l~vbeln = it_vttp-vbeln.
+
+    SELECT t~bzirk t~bztxt
+      INTO TABLE it_t171t
+      FROM t171t AS t JOIN knvv AS k ON t~bzirk = k~bzirk
+      FOR ALL ENTRIES IN it_knvv
+      WHERE k~bzirk = it_knvv-bzirk.
+
+    SELECT s~tknum s~tsnum s~tdlnr
+      INTO TABLE it_vtts
+      FROM vtts AS s JOIN vttk AS v ON s~tknum = v~tknum
+      FOR ALL ENTRIES IN it_vttk
+      WHERE s~tknum = it_vttk-tknum AND s~tsnum = '001'.
+
+    SELECT l~lifnr l~name1
+      INTO TABLE it_lfa1
+      FROM lfa1 AS l JOIN vttk AS v ON l~lifnr = v~tdlnr
+      FOR ALL ENTRIES IN it_vttk
+      WHERE l~lifnr = it_vttk-tdlnr.
+
+
+    SELECT f~lifnr f~name1
+      INTO TABLE it_lfa2
+      FROM lfa1 AS f JOIN vtts AS v ON f~lifnr = v~tdlnr
+      FOR ALL ENTRIES IN it_vtts
+      WHERE f~lifnr = it_vtts-tdlnr.
+
+  ENDIF.
+
+
+
+
+ENDFORM.
+
+
+FORM proccess_data.
+  DATA : v_spc(10) TYPE p,
+         price98   TYPE vbap-netpr,
+         price100  TYPE vbap-cmpre,
+         bill100   TYPE vbrp-netwr,
+         qty       TYPE vbrp-fkimg.
+
+*
+*  CLEAR : it_report_rem, wa_report_rem,  it_likp, wa_likp, it_vttp, wa_vttp, it_zsdtb_pebhdr, wa_zsdtb_pebhdr,
+*          it_zsdtb_pebinv, wa_zsdtb_pebinv,it_vbrp, wa_vbrp, it_vbkd, wa_vbkd, it_lips, wa_lips,
+*          it_mara,wa_mara,it_t005t,wa_t005t,it_kna1,wa_kna1,it_vttk,wa_vttk,it_tvgrt,wa_tvgrt,it_t173t,wa_t173t,
+*          it_vbap,wa_vbap,it_knvv,wa_knvv,it_t171t,wa_t171t,it_vtts,wa_vtts,it_lfa1,wa_lfa1,it_lfa2,wa_lfa1,
+*          it_mkpf,wa_mkpf,it_vttk2,wa_vttk2,it_likp1,wa_likp1.
+
+  SORT it_lips BY vbeln vgbel.
+  LOOP AT it_lips INTO wa_lips.
+    wa_lips3-vbeln = wa_lips-vbeln.
+    wa_lips3-vgbel = wa_lips-vgbel.
+    wa_lips3-lfimg = wa_lips-lfimg.
+    COLLECT wa_lips3 INTO it_lips3.
+  ENDLOOP.
+  CLEAR wa_lips3.
+
+  SORT it_vbkd BY vbeln.
+  LOOP AT it_vbkd INTO wa_vbkd.
+    wa_vbkd2-vbeln = wa_vbkd-vbeln.
+    wa_vbkd2-bstkd = wa_vbkd-bstkd.
+    COLLECT wa_vbkd2 INTO it_vbkd2.
+  ENDLOOP.
+  CLEAR wa_vbkd2.
+
+  SORT it_vbrp BY vbeln  aubel.
+  LOOP AT it_vbrp INTO wa_vbrp.
+    wa_vbrp2-vgbel = wa_vbrp-vgbel.
+    wa_vbrp2-vbeln = wa_vbrp-vbeln.
+    wa_vbrp2-aubel = wa_vbrp-aubel.
+    wa_vbrp2-netwr = wa_vbrp-netwr.
+    wa_vbrp2-waerk = wa_vbrp-waerk.
+
+    "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+*    wa_vbrp2-zzbl_no  = wa_vbrp-zzbl_no.
+*    wa_vbrp2-zzbl_dat = wa_vbrp-zzbl_dat.
+*    wa_vbrp2-arktx    = wa_vbrp-arktx.
+    "End of Updating (20200904 - Add Some Fields)
+
+    COLLECT wa_vbrp2 INTO it_vbrp2.
+  ENDLOOP.
+  CLEAR wa_vbrp2.
+
+  SORT it_lips3 BY vbeln.
+  DELETE ADJACENT DUPLICATES  FROM it_lips3 COMPARING ALL FIELDS. "end of collecting kp and qty based on ODO"
+
+  LOOP AT it_lips3 INTO wa_lips3.               "MAIN LOOP"
+    wa_report_rem-vbeln = wa_lips3-vbeln.
+    wa_report_rem-aubel = wa_lips3-vgbel.
+    wa_report_rem-s_pcs = wa_lips3-lfimg.
+
+
+    READ TABLE it_vttp INTO wa_vttp WITH KEY vbeln = wa_lips3-vbeln.
+    IF sy-subrc EQ 0.
+      wa_report_rem-tknum = wa_vttp-tknum.
+    ENDIF.
+
+    READ TABLE it_likp INTO wa_likp WITH KEY vbeln = wa_vttp-vbeln.
+    IF sy-subrc EQ 0.
+      wa_report_rem-inco = wa_likp-inco2_l.
+      wa_report_rem-anzpk = wa_likp-anzpk.
+      wa_report_rem-volum = wa_likp-volum.
+      wa_report_rem-kunag = wa_likp-kunag.
+      wa_report_rem-kunnr = wa_likp-kunnr. "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+    ENDIF.
+
+    READ TABLE it_mkpf INTO wa_mkpf WITH KEY le_vbeln = wa_vttp-vbeln.
+    IF sy-subrc EQ 0.
+      wa_report_rem-budat = wa_mkpf-budat.
+      wa_report_rem-cpudt = wa_mkpf-cpudt.
+    ENDIF.
+
+
+    READ TABLE it_zsdtb_pebhdr INTO wa_zsdtb_pebhdr WITH KEY tknum = wa_vttp-tknum.
+    IF sy-subrc EQ 0.
+      wa_report_rem-tgdaft = wa_zsdtb_pebhdr-tgdaft.
+      wa_report_rem-nodaft = wa_zsdtb_pebhdr-nodaft.
+      wa_report_rem-car    = wa_zsdtb_pebhdr-car.
+      "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+      wa_report_rem-namabeli = wa_zsdtb_pebhdr-namabeli.
+      wa_report_rem-pelmuat  = wa_zsdtb_pebhdr-pelmuat.
+      "End of Updating (20200904 - Add Some Fields)
+    ENDIF.
+
+    "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+    LOOP AT gt_zsdtb_pebdtl WHERE tknum = wa_vttp-tknum AND seribrg+2(4) = wa_vttp-tpnum.
+      wa_report_rem-hs = gt_zsdtb_pebdtl-hs.
+    ENDLOOP.
+    "End of Updating (20200904 - Add Some Fields)
+
+    READ TABLE it_zsdtb_pebinv INTO wa_zsdtb_pebinv-invoice_no WITH KEY tknum = wa_vttp-tknum.
+    IF sy-subrc EQ 0.
+      wa_report_rem-invoice_no = wa_zsdtb_pebinv-invoice_no.
+    ENDIF.
+
+
+
+    READ TABLE it_vbrp2 INTO wa_vbrp2 WITH KEY vgbel = wa_lips3-vbeln aubel = wa_lips3-vgbel.
+    IF sy-subrc EQ 0.
+
+      wa_report_rem-vbeln1 = wa_vbrp2-vbeln.
+
+      IF wa_vbrp2-waerk = 'IDR'.                        "UPDATING CURR IF IDR MULTIPLE BY 100 290520
+        wa_report_rem-bill   = wa_vbrp2-netwr * 100.
+      ELSE.
+        wa_report_rem-bill   = wa_vbrp2-netwr.
+      ENDIF.                                            " END OF UPDATING.
+
+      wa_report_rem-totamt96   = ( wa_report_rem-bill * 96 ) / 100. "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+    ENDIF.
+
+    READ TABLE it_vbkd2 INTO wa_vbkd2 WITH KEY vbeln = wa_lips3-vgbel.
+    IF sy-subrc EQ 0.
+      wa_report_rem-bstkd = wa_vbkd2-bstkd.
+    ENDIF.
+
+    read table it_vbrp into wa_vbrp with key vbeln = wa_vbrp2-vbeln.
+    if sy-subrc eq 0.
+      wa_report_rem-zzbl_no   = wa_vbrp-zzbl_no.
+      wa_report_rem-zzbl_dat  = wa_vbrp-zzbl_dat.
+    endif.
+
+*  READ TABLE it_vbrp3 INTO wa_vbrp3 WITH KEY vgbel = wa_lips3-vbeln aubel = wa_lips3-vgbel. " Updating item kp 290520
+
+    READ TABLE it_lips2 INTO wa_lips2 WITH KEY vbeln = wa_lips3-vbeln.
+
+    Read table it_vbap into wa_vbap with key vbeln = wa_lips3-vgbel.
+    if sy-subrc eq 0.
+*     if wa_vbap-vbeln = wa_lips2-vgbel and wa_vbap-posnr = wa_lips2-vgpos.                                                                  "end of updating (wa_lips3-vgbel.) Before update 290520
+      IF wa_vbap-waerk = 'IDR'.
+        wa_report_rem-price2% = wa_vbap-netpr * 100.
+      ELSEIF wa_vbap-waerk = 'USD'.
+        wa_report_rem-price2% = wa_vbap-netpr.
+      ENDIF.
+      wa_report_rem-waerk = wa_vbap-waerk.
+     endif.
+*      MODIFY it_vbap FROM wa_vbap.
+*    ENDLOOP.
+
+    wa_report_rem-auart = wa_vbap-auart. "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+
+    READ TABLE it_mara INTO wa_mara WITH KEY matnr = wa_vbap-matnr.
+    IF sy-subrc EQ 0.
+      wa_report_rem-matnr = wa_mara-zmatgen.
+      wa_report_rem-arktx = wa_mara-maktx. "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+    ENDIF.
+
+    READ TABLE  it_kna1 INTO wa_kna1 WITH KEY kunnr = wa_likp-kunnr.
+
+    READ TABLE it_t005t  INTO wa_t005t WITH KEY land1 = wa_kna1-land1.
+    IF sy-subrc EQ 0.
+      wa_report_rem-landx = wa_t005t-landx.
+    ENDIF.
+
+    LOOP AT it_vttk INTO wa_vttk WHERE tknum = wa_vttp-tknum.
+      wa_report_rem-text1 = wa_vttk-text1.
+      wa_report_rem-text2 = wa_vttk-text2.
+      wa_report_rem-text3 = wa_vttk-text3.
+      wa_report_rem-text4 = wa_vttk-text4.
+      wa_report_rem-plant = wa_vttk-tplst.
+      wa_report_rem-vesel = wa_vttk-zzvsslname.
+      wa_report_rem-truckno = wa_vttk-zztrckno. " Updated on 240720
+      wa_report_rem-dtdis = wa_vttk-dtdis.
+      IF wa_vttk-tplst = 'AG01' .
+        wa_report_rem-plant = 'KLEGO'.
+      ELSEIF wa_vttk-tplst = 'AG02'.
+        wa_report_rem-plant = 'SAMBI'.
+      ELSEIF wa_vttk-tplst = 'AB01'.
+        wa_report_rem-plant = 'PANCA'.
+      ENDIF.
+      MODIFY it_vttk FROM wa_vttk.
+    ENDLOOP.
+
+    READ TABLE it_tvgrt INTO wa_tvgrt WITH KEY vkgrp = wa_mara-vkgrp.
+    SELECT SINGLE bezei FROM tvgrt INTO wa_report_rem-buyer
+      WHERE vkgrp = wa_mara-vkgrp.
+
+    READ TABLE it_t173t INTO wa_t173t WITH KEY vsart = wa_vttk-vsart.
+    SELECT SINGLE bezei FROM t173t INTO wa_report_rem-moda
+      WHERE vsart = wa_vttk-vsart AND spras = 'EN'.
+
+    SELECT SINGLE netpr FROM vbap INTO price98
+      WHERE vbeln = wa_vbap-vbeln.
+    IF wa_vbap-waerk = 'IDR'.
+      price98 =  wa_vbap-netpr * 100.
+    ELSEIF wa_vbap-waerk = 'USD'.
+      price98 = wa_vbap-netpr.
+    ENDIF.
+    wa_report_rem-price100 = 100 * price98 / 98.
+    wa_report_rem-bill100 = wa_report_rem-price100 *  wa_report_rem-s_pcs .
+
+    wa_report_rem-price96 = 96 * price98 / 98. "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+
+    READ TABLE it_knvv INTO wa_knvv WITH KEY kunnr = wa_likp-kunnr.
+
+    READ TABLE it_t171t INTO wa_t171t WITH KEY bzirk = wa_knvv-bzirk.
+    SELECT SINGLE bztxt
+      FROM t171t INTO wa_report_rem-wh
+      WHERE bzirk = wa_knvv-bzirk.
+
+    READ TABLE it_lfa1 INTO wa_lfa1 WITH KEY lifnr = wa_vttk-tdlnr.    "loop to read"
+    IF sy-subrc EQ 0.
+      wa_report_rem-fwd = wa_lfa1-name.
+    ENDIF.
+
+    READ TABLE it_vtts INTO wa_vtts WITH KEY tknum = wa_vttk-tknum.
+
+    READ TABLE it_lfa2 INTO wa_lfa2 WITH KEY lifnr = wa_vtts-tdlnr.
+    IF sy-subrc EQ 0.
+      wa_report_rem-truck = wa_lfa2-name.
+    ENDIF.
+
+    APPEND wa_report_rem TO it_report_rem.
+    CLEAR wa_report_rem.
+
+
+  ENDLOOP.
+
+ENDFORM.
+
+"==================================end of act==============================="
+
+
+"==================================Perform mon============================="
+
+FORM get_data2.
+
+  SELECT tknum tplst vsart zzvsslname zzvygno tdlnr add01 text1 text2 text3 text4 dtdis zztrckno
+    INTO TABLE it_vttk " selection for checking"
+    FROM vttk
+    WHERE dtdis IN s_dtdis  AND tplst IN s_vstel.
+
+  IF it_vttk[] IS NOT INITIAL.
+
+    SELECT tknum tplst vsart zzvsslname zzvygno tdlnr add01 text1 text2 text3 text4 dtdis zztrckno
+       INTO TABLE it_vttk2 " selection for checking"
+      FROM vttk
+      FOR ALL ENTRIES IN it_vttk
+      WHERE tknum = it_vttk-tknum AND dtdis NE '00000000' AND shtyp NE 'SJEX'.
+
+
+    SELECT tknum vbeln
+      INTO TABLE it_vttp
+      FROM vttp
+      FOR ALL ENTRIES IN it_vttk2
+      WHERE tknum = it_vttk2-tknum.
+
+
+    SELECT wadat_ist kunnr vbeln inco2_l vstel vkorg lfart volum anzpk kunag
+      INTO TABLE it_likp
+      FROM likp
+      FOR ALL ENTRIES IN it_vttp
+      WHERE vbeln = it_vttp-vbeln
+      AND  lfart IN s_lfart AND kunag IN s_kunag.
+  ENDIF.
+  "( lfart ='D031' OR LFART ='D032' ).
+  IF it_likp[] IS NOT INITIAL.
+
+    SELECT mblnr budat tcode2 le_vbeln cpudt
+      INTO TABLE it_mkpf
+      FROM mkpf
+      FOR ALL ENTRIES IN it_likp
+      WHERE le_vbeln = it_likp-vbeln AND tcode2 = 'VL02N'.
+
+
+    SELECT i~invoice_no i~tknum
+      INTO TABLE it_zsdtb_pebinv
+      FROM zsdtb_pebinv AS i JOIN vttp AS v ON i~tknum = v~tknum
+      FOR ALL ENTRIES IN it_vttp
+      WHERE v~tknum = it_vttp-tknum.
+
+    SELECT p~tgdaft p~nodaft p~car p~tknum
+      INTO TABLE it_zsdtb_pebhdr
+      FROM zsdtb_pebhdr AS p JOIN vttp AS v ON p~tknum = v~tknum
+      FOR ALL ENTRIES IN it_vttp
+      WHERE v~tknum = it_vttp-tknum.
+
+
+    SELECT b~fkimg b~vgbel b~vbeln b~aubel b~aupos b~netwr b~vrkme b~waerk
+       INTO TABLE it_vbrp
+       FROM vbrp AS b JOIN vttp AS v ON b~vgbel = v~vbeln
+                      JOIN vbrk AS k ON b~vbeln = k~vbeln
+       FOR ALL ENTRIES IN it_vttp
+       WHERE v~tknum = it_vttp-tknum
+       AND k~fkart <> 'B090'
+       AND k~fksto <> 'X'.
+
+*    SELECT fkimg vgbel vbeln aubel aupos netwr vrkme waerk   " Updating item 290520
+*    INTO TABLE it_vbrp3 FROM vbrp
+*    FOR ALL ENTRIES IN it_vbrp
+*    WHERE vbeln = it_vbrp-vbeln.                             " end of updating 290520
+
+    SELECT l~vbeln l~vgbel l~vgpos l~matnr l~pstyv l~lfimg l~posnr
+      INTO TABLE it_lips
+      FROM lips AS l JOIN likp AS v ON l~vbeln  = v~vbeln
+      FOR ALL ENTRIES IN it_likp
+      WHERE l~vbeln  = it_likp-vbeln.
+
+    SELECT vbeln vgbel vgpos matnr pstyv lfimg posnr
+     INTO TABLE it_lips2 FROM lips
+     FOR ALL ENTRIES IN it_lips
+     WHERE vbeln  = it_lips-vbeln.
+
+    SELECT v~vbeln v~bstkd v~posnr
+      INTO TABLE it_vbkd
+      FROM vbkd AS v JOIN lips AS l ON v~vbeln = l~vgbel
+      FOR ALL ENTRIES IN it_lips
+      WHERE v~vbeln = it_lips-vgbel AND v~posnr = l~vgpos.
+
+    SELECT v~vbeln v~netpr v~posnr v~waerk v~matnr
+       INTO TABLE it_vbap
+       FROM vbap AS v JOIN lips AS l ON v~vbeln = l~vgbel
+       FOR ALL ENTRIES IN it_lips
+       WHERE v~vbeln = it_lips-vgbel AND v~posnr = it_lips-vgpos.
+
+    SELECT m~zmatgen m~matnr m~vkgrp
+      INTO TABLE it_mara
+      FROM mara AS m
+      JOIN lips AS l ON m~matnr = l~matnr
+      FOR ALL ENTRIES IN it_vbap
+      WHERE m~matnr = it_vbap-matnr.
+
+*SELECT wadat_ist kunnr vbeln inco2_l INTO TABLE it_likp FROM likp
+*WHERE wadat_ist IN s_wadat.
+
+    SELECT t~landx t~land1 INTO TABLE it_t005t
+      FROM t005t AS t JOIN kna1 AS k ON t~land1 = k~land1
+                  JOIN likp AS l ON l~kunnr = k~kunnr
+      FOR ALL ENTRIES IN it_likp
+      WHERE k~kunnr = it_likp-kunnr AND t~spras = 'EN'.
+
+    SELECT k~kunnr k~land1
+      INTO TABLE it_kna1
+      FROM kna1 AS k JOIN likp AS l ON k~kunnr = l~kunnr
+      FOR ALL ENTRIES IN it_likp
+      WHERE k~kunnr = it_likp-kunnr.
+
+
+    SELECT s~vkgrp s~bezei
+      INTO TABLE it_tvgrt
+      FROM tvgrt AS s JOIN mara AS m ON s~vkgrp = m~vkgrp
+      FOR ALL ENTRIES IN it_lips
+      WHERE m~matnr = it_lips-matnr.
+
+    SELECT t~vsart t~bezei
+      INTO TABLE it_t173t
+      FROM t173t AS t JOIN vttk AS v ON t~vsart = v~vsart
+      FOR ALL ENTRIES IN it_vttk
+      WHERE v~tknum = it_vttk-tknum AND t~spras =  'EN'.
+
+    SELECT k~kunnr k~bzirk
+      INTO TABLE it_knvv
+      FROM knvv AS k JOIN likp AS l ON k~kunnr = l~kunnr
+      FOR ALL ENTRIES IN it_likp
+      WHERE k~kunnr = it_likp-kunnr.
+
+    SELECT t~bzirk t~bztxt
+      INTO TABLE it_t171t
+      FROM t171t AS t JOIN knvv AS k ON t~bzirk = k~bzirk
+      FOR ALL ENTRIES IN it_knvv
+      WHERE k~bzirk = it_knvv-bzirk.
+
+    SELECT s~tknum s~tsnum s~tdlnr
+      INTO TABLE it_vtts
+      FROM vtts AS s JOIN vttk AS v ON s~tknum = v~tknum
+      FOR ALL ENTRIES IN it_vttk
+      WHERE s~tknum = it_vttk-tknum AND s~tsnum = '001'.
+
+    SELECT l~lifnr l~name1
+      INTO TABLE it_lfa1
+      FROM lfa1 AS l JOIN vttk AS v ON l~lifnr = v~tdlnr
+      FOR ALL ENTRIES IN it_vttk
+      WHERE l~lifnr = it_vttk-tdlnr.
+
+    SELECT f~lifnr f~name1
+      INTO TABLE it_lfa2
+      FROM lfa1 AS f JOIN vtts AS v ON f~lifnr = v~tdlnr
+      FOR ALL ENTRIES IN it_vtts
+      WHERE f~lifnr = it_vtts-tdlnr.
+
+  ENDIF.
+
+
+ENDFORM.
+
+
+FORM proccess_data2.
+
+
+  DATA : v_spc(10) TYPE p,
+         price98   TYPE vbap-netpr,
+         price100  TYPE vbap-cmpre,
+         bill100   TYPE vbrp-netwr,
+         atqty     TYPE lips-lfimg.
+
+  CLEAR : it_report_rem, wa_report_rem,  it_likp, wa_likp, it_vttp, wa_vttp, it_zsdtb_pebhdr, wa_zsdtb_pebhdr,
+          it_zsdtb_pebinv, wa_zsdtb_pebinv,it_vbrp, wa_vbrp, it_vbkd, wa_vbkd, it_lips, wa_lips,
+          it_mara,wa_mara,it_t005t,wa_t005t,it_kna1,wa_kna1,it_vttk,wa_vttk,it_tvgrt,wa_tvgrt,it_t173t,wa_t173t,
+          it_vbap,wa_vbap,it_knvv,wa_knvv,it_t171t,wa_t171t,it_vtts,wa_vtts,it_lfa1,wa_lfa1,it_lfa2,wa_lfa1,
+          it_mkpf,wa_mkpf,it_vttk2,wa_vttk2,it_likp1,wa_likp1.
+*
+
+  SORT it_lips BY vbeln vgbel.
+  LOOP AT it_lips INTO wa_lips.
+    wa_lips3-vbeln = wa_lips-vbeln.
+    wa_lips3-vgbel = wa_lips-vgbel.
+    wa_lips3-lfimg = wa_lips-lfimg.
+    COLLECT wa_lips3 INTO it_lips3.
+  ENDLOOP.
+  CLEAR wa_lips3.
+
+  SORT it_vbkd BY vbeln.
+  LOOP AT it_vbkd INTO wa_vbkd.
+    wa_vbkd2-vbeln = wa_vbkd-vbeln.
+    wa_vbkd2-bstkd = wa_vbkd-bstkd.
+    COLLECT wa_vbkd2 INTO it_vbkd2.
+  ENDLOOP.
+  CLEAR wa_vbkd2.
+
+  SORT it_vbrp BY vbeln vgbel aubel.
+  LOOP AT it_vbrp INTO wa_vbrp.
+    wa_vbrp2-vgbel = wa_vbrp-vgbel.
+    wa_vbrp2-vbeln = wa_vbrp-vbeln.
+    wa_vbrp2-aubel = wa_vbrp-aubel.
+    wa_vbrp2-netwr = wa_vbrp-netwr.
+    wa_vbrp2-waerk = wa_vbrp-waerk.
+    COLLECT wa_vbrp2 INTO it_vbrp2..
+  ENDLOOP.
+  CLEAR wa_vbrp2.
+
+  SORT it_lips3 BY vbeln.
+  DELETE ADJACENT DUPLICATES  FROM it_lips3 COMPARING ALL FIELDS.
+
+  LOOP AT it_lips3 INTO wa_lips3.
+    wa_report_rem-vbeln = wa_lips3-vbeln.
+    wa_report_rem-aubel = wa_lips3-vgbel.
+    wa_report_rem-s_pcs = wa_lips3-lfimg.
+
+    READ TABLE  it_vttp INTO wa_vttp WITH KEY vbeln = wa_lips3-vbeln. "loop to read"
+    IF sy-subrc EQ 0.
+      wa_report_rem-tknum = wa_vttp-tknum.
+    ENDIF.
+
+    LOOP AT it_vttk2 INTO wa_vttk2 WHERE tknum = wa_vttp-tknum.  "loop to read"
+      wa_report_rem-text1 = wa_vttk-text1.
+      wa_report_rem-text2 = wa_vttk-text2.
+      wa_report_rem-text3 = wa_vttk-text3.
+      wa_report_rem-text4 = wa_vttk-text4.
+      wa_report_rem-plant = wa_vttk2-tplst.
+      wa_report_rem-vesel = wa_vttk2-zzvsslname.
+      wa_report_rem-truckno = wa_vttk2-zztrckno.
+      wa_report_rem-dtdis = wa_vttk2-dtdis.
+      IF wa_vttk2-tplst = 'AG01' .
+        wa_report_rem-plant = 'KLEGO'.
+      ELSEIF wa_vttk2-tplst = 'AG02'.
+        wa_report_rem-plant = 'SAMBI'.
+      ELSEIF wa_vttk2-tplst = 'AB01'.
+        wa_report_rem-plant = 'PANCA'.
+      ENDIF.
+      MODIFY it_vttk2 FROM wa_vttk2.
+    ENDLOOP.
+
+
+    READ TABLE  it_likp INTO wa_likp WITH KEY vbeln = wa_vttp-vbeln.
+    IF sy-subrc EQ 0.
+      wa_report_rem-inco = wa_likp-inco2_l.
+      wa_report_rem-anzpk = wa_likp-anzpk.
+      wa_report_rem-volum = wa_likp-volum.
+      wa_report_rem-kunag = wa_likp-kunag.
+    ENDIF.
+
+    READ TABLE it_mkpf INTO wa_mkpf WITH KEY le_vbeln = wa_likp-vbeln.
+    IF sy-subrc EQ 0.
+      wa_report_rem-budat = wa_mkpf-budat. " EDITED 280420"
+      wa_report_rem-cpudt = wa_mkpf-cpudt.
+    ENDIF.
+
+    READ TABLE  it_zsdtb_pebhdr INTO wa_zsdtb_pebhdr WITH KEY tknum = wa_vttp-tknum.
+    IF sy-subrc EQ 0.
+      wa_report_rem-tgdaft = wa_zsdtb_pebhdr-tgdaft.
+      wa_report_rem-nodaft = wa_zsdtb_pebhdr-nodaft.
+      wa_report_rem-car    = wa_zsdtb_pebhdr-car.
+    ENDIF.
+
+
+    READ TABLE  it_zsdtb_pebinv INTO wa_zsdtb_pebinv-invoice_no WITH KEY tknum = wa_vttp-tknum.
+    IF sy-subrc EQ 0.
+      wa_report_rem-invoice_no = wa_zsdtb_pebinv-invoice_no.
+    ENDIF.
+
+    READ TABLE it_vbrp2 INTO wa_vbrp2 WITH KEY vgbel = wa_lips3-vbeln aubel = wa_lips3-vgbel.
+    IF sy-subrc EQ 0.
+      wa_report_rem-vbeln1 = wa_vbrp2-vbeln.
+      IF wa_vbrp2-waerk = 'IDR'.                                        "UPDATING CUUR IF IDR MULTIPLE BY 100 290520.
+        wa_report_rem-bill   = wa_vbrp2-netwr * 100.
+      ELSE.
+        wa_report_rem-bill   = wa_vbrp2-netwr.
+      ENDIF.                                                              " END OF UPDATING.
+
+    ENDIF.
+
+    READ TABLE it_vbkd2 INTO wa_vbkd2 WITH KEY vbeln = wa_lips3-vgbel.
+    IF sy-subrc EQ 0.
+      wa_report_rem-bstkd = wa_vbkd2-bstkd.
+    ENDIF.
+
+*  READ TABLE it_vbrp3 INTO wa_vbrp3 WITH KEY vgbel = wa_lips3-vbeln aubel = wa_lips3-vgbel. " updating item KP 290520
+
+    READ TABLE it_lips2 INTO wa_lips2 WITH KEY vbeln = wa_lips3-vbeln.
+
+    REad TABLE it_vbap into wa_vbap with key vbeln = wa_lips3-vgbel .
+
+    if sy-subrc eq 0.
+
+      IF wa_vbap-waerk = 'IDR'.
+        wa_report_rem-price2% = wa_vbap-netpr * 100.
+      ELSEIF wa_vbap-waerk = 'USD'.
+        wa_report_rem-price2% = wa_vbap-netpr.
+      ENDIF.
+      wa_report_rem-waerk = wa_vbap-waerk.
+    endif.
+*      MODIFY it_vbap FROM wa_vbap.
+*    ENDLOOP.
+
+    SELECT SINGLE netpr FROM vbap INTO price98
+      WHERE vbeln = wa_vbap-vbeln.
+    IF wa_vbap-waerk = 'IDR'.
+      price98 =  wa_vbap-netpr * 100.
+    ELSEIF wa_vbap-waerk = 'USD'.
+      price98 = wa_vbap-netpr.
+    ENDIF.
+    wa_report_rem-price100 = 100 * price98 / 98.
+    wa_report_rem-bill100 = wa_report_rem-price100 * wa_report_rem-s_pcs.
+
+    READ TABLE it_mara INTO wa_mara WITH KEY matnr = wa_vbap-matnr. "loop to read"
+    IF sy-subrc EQ 0.
+      wa_report_rem-matnr = wa_mara-zmatgen.
+    ENDIF.
+
+
+    READ TABLE it_kna1 INTO wa_kna1 WITH KEY kunnr = wa_likp-kunnr.
+
+    READ TABLE it_t005t  INTO wa_t005t WITH KEY land1 = wa_kna1-land1.
+    IF sy-subrc EQ 0.
+      wa_report_rem-landx = wa_t005t-landx.
+    ENDIF.
+
+
+    READ TABLE it_tvgrt INTO wa_tvgrt WITH KEY vkgrp = wa_mara-vkgrp.
+    SELECT SINGLE bezei
+      FROM tvgrt
+      INTO wa_report_rem-buyer
+      WHERE vkgrp = wa_mara-vkgrp.
+
+    READ TABLE it_t173t INTO wa_t173t WITH KEY vsart = wa_vttk2-vsart.
+    SELECT SINGLE bezei
+      FROM t173t
+      INTO wa_report_rem-moda
+      WHERE vsart = wa_vttk2-vsart AND spras = 'EN'.
+
+
+    READ TABLE it_knvv INTO wa_knvv WITH KEY kunnr = wa_likp-kunnr.
+
+    READ TABLE it_t171t INTO wa_t171t WITH KEY bzirk = wa_knvv-bzirk.
+    SELECT SINGLE bztxt
+      FROM t171t
+      INTO wa_report_rem-wh
+      WHERE bzirk = wa_knvv-bzirk.
+
+    READ TABLE it_lfa1 INTO wa_lfa1 WITH KEY lifnr = wa_vttk2-tdlnr.    "loop to read"
+    IF sy-subrc EQ 0.
+      wa_report_rem-fwd = wa_lfa1-name.
+    ENDIF.
+
+    READ TABLE it_vtts INTO wa_vtts WITH KEY tknum = wa_vttk2-tknum.
+
+    READ TABLE  it_lfa2 INTO wa_lfa2 WITH KEY lifnr = wa_vtts-tdlnr.    "loop to read"
+    IF sy-subrc EQ 0.
+      wa_report_rem-truck = wa_lfa2-name.
+    ENDIF.
+
+
+    APPEND wa_report_rem TO it_report_rem.
+    CLEAR wa_report_rem.
+
+  ENDLOOP.
+
+
+ENDFORM.
+
+"=================================end of mon========================"
+
+FORM display_data.
+  PERFORM fill_fieldcat.
+  gw_layout-zebra = 'X'.
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program = sy-repid
+      is_layout          = gw_layout
+      it_fieldcat        = gt_cat
+      i_default          = ''
+      i_save             = 'X'
+    TABLES
+      t_outtab           = it_report_rem.
+
+  IF sy-subrc <> 0.
+  ENDIF.
+
+ENDFORM.
+
+
+FORM hide_screeen .
+  IF p_rad2 = 'X'.
+    LOOP AT SCREEN.
+      IF screen-group1 = 'act'.
+        screen-invisible = 1.
+        screen-active = 0.
+      ELSE.
+        screen-invisible = 0.
+        screen-active = 1.
+      ENDIF.
+      MODIFY SCREEN.
+    ENDLOOP.
+  ELSEIF p_rad1 = 'X'.
+    LOOP AT SCREEN.
+      IF screen-group1 = 'mon'.
+        screen-invisible = 1.
+        screen-active = 0.
+      ELSE.
+        screen-invisible = 0.
+        screen-active = 1.
+      ENDIF.
+      MODIFY SCREEN.
+    ENDLOOP.
+  ENDIF.
+ENDFORM.
+
+FORM fill_fieldcat.
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'TKNUM'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'No SJ'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'INVOICE_NO'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'No Inv'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'TGDAFT'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Tgl PEB'. "'TGL DAFTAR'. "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'NODAFT'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'No PEB'. "'NO DAFTAR'. "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'CAR'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 30.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'No Aju'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'VBELN'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'ODO'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'S_PCS'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Quantity'.
+  APPEND gw_cat TO gt_cat.
+
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'AUBEL'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'KP No'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'VBELN1'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Billing No'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BSTKD'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'PO No'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'MATNR'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Style'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'LANDX'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Destination'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'PLANT'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Factory'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BUYER'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Buyer'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'MODA'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Ship Mode'. "'MODA'. "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'INCO'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Pelabuhan Muat'.
+  APPEND gw_cat TO gt_cat.
+
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'PRICE2%'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Price KP 98%'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'PRICE100'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Price KP 100%'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BILL'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 30.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Total Amount Billing'.
+  APPEND gw_cat TO gt_cat.
+
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BILL100'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 30.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Total Amount 100%'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'WH'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Gudang Konsolidator'. "'GUDANG (WH)'. "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'VESEL'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Vessel Name'. "'ALAT PENGANGKUT'. "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'FWD'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 30.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Forwarder'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'TRUCK'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 25.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Trucking Name'. "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BUDAT'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 25.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Exfactory Date'. "'Tgl Export'. "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'TEXT1'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 5.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'LCL'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'TEXT2'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 5.
+  gw_cat-seltext_l = gw_cat-seltext_l = '20 FT'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'TEXT3'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 5.
+  gw_cat-seltext_l = gw_cat-seltext_l = '40 FT'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'TEXT4'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 5.
+  gw_cat-seltext_l = gw_cat-seltext_l = '40 HC'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'VOLUM'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 5.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'CBM'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ANZPK'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 5.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'CTN'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DTDIS'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Tgl Inv'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'WAERK'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Curr'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'KUNAG'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Sold To'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'CPUDT'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'PGI Entry On '.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'TRUCKNO'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Truck No '.
+  APPEND gw_cat TO gt_cat.
+
+  "20200904 - Updated by PB-AB (Add Some Fields) Req by Mas Kenang
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ETD_DAT'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'ETD Date'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZZBL_NO'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'BL Number'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZZBL_DAT'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'BL Date'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'HS'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'HS Code/Number'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ARKTX'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Style Desc.'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'PRICE96'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Price KP 96%'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'TOTAMT96'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Total Amount Invoice 96%'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'KUNNR'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Ship to Party'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'AUART'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'KP Type'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'NAMABELI'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Buyer Name'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'PELMUAT'.
+  gw_cat-tabname = 'IT_REPORT_REM'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Kode Pelabuhan Muat'.
+  APPEND gw_cat TO gt_cat.
+  "End of Updating (20200904 - Add Some Fields)
+
+
+ENDFORM.
