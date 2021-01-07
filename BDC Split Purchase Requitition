@@ -1,0 +1,718 @@
+*&---------------------------------------------------------------------*
+*& Report ZMMRP_SPLITPR
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zmmrp_splitpr.
+TABLES : vbkd, eban, zmmtb_pno,zmmtb_matvar, vbap.
+TYPE-POOLS : SLIS.
+
+TYPES : BEGIN OF ty_split,
+
+        CHECK     TYPE CHAR1,
+        vbeln     TYPE vbkd-vbeln,
+        banfn     TYPE eban-banfn,
+        bnfpo     TYPE eban-bnfpo,
+        matnr     TYPE eban-matnr,
+        qtyorder  TYPE zmmtb_pno-menge_order,
+        qtysample TYPE vbap-kwmeng,
+        qtypr     TYPE p DECIMALS 2,
+        qtyprblk  TYPE p ,
+        qtyprfs   TYPE p ,
+        textblk   TYPE c LENGTH 15,
+        textsmp   TYPE c LENGTH 15,
+        EKGRP     TYPE EBAN-EKGRP,
+        WERKS     TYPE EBAN-WERKS,
+        MATKL     TYPE EBAN-MATKL,
+        MEINS     TYPE EBAN-MEINS,
+        LFDAT     TYPE C LENGTH 10,
+        BWTAR     TYPE EBAN-BWTAR,
+        VBELP     TYPE EBKN-VBELP,
+        MARKS(30)      TYPE C,
+        LINE_COLOR(4)  TYPE C,  " FOR COLORING LINE
+        tdname like VBDPA-tdname,
+        TEXTPR(20) TYPE C,
+
+
+        END OF ty_split,
+
+        BEGIN OF ty_vbkdap,
+        vbeln       TYPE vbkd-vbeln,
+        posnr       TYPE vbkd-posnr,
+        bstkd       TYPE vbkd-bstkd,
+        matnr       TYPE vbap-matnr,
+        abgru       TYPE vbap-abgru,
+        werks       TYPE vbap-werks,
+        kwmeng      TYPE vbap-kwmeng,
+        zmatgen     TYPE zmmtb_matvar-zmatgen,
+        color_value TYPE zmmtb_matvar-color_value,
+        size_value  TYPE zmmtb_matvar-size_value,
+        BANFN       TYPE EBKN-BANFN,
+        END OF ty_vbkdap,
+
+        BEGIN OF TY_EBAN,
+        vbeln       TYPE ebkn-vbeln,
+        BANFN       TYPE EBAN-BANFN,
+        BNFPO       TYPE EBAN-BNFPO,
+        MATNR       TYPE EBAN-MATNR,
+        MENGE       TYPE EBAN-MENGE,
+        EBELN       TYPE EBAN-EBELN,
+        LOEKZ       TYPE EBAN-LOEKZ,
+        meins       TYPE eban-meins,
+        EKGRP     TYPE EBAN-EKGRP,
+        WERKS     TYPE EBAN-WERKS,
+        MATKL     TYPE EBAN-MATKL,
+        LFDAT     TYPE EBAN-LFDAT,
+        BWTAR     TYPE EBAN-BWTAR,
+        VBELP     TYPE EBKN-VBELP,
+        END OF TY_EBAN,
+
+        BEGIN OF TY_ZMMTB_PNO2,
+        VBELN       TYPE ZMMTB_PNO-VBELN,
+        MATNR       TYPE ZMMTB_PNO-MATNR,
+        COLORG      TYPE ZMMTB_PNO-COLORG,
+        SIZEG       TYPE ZMMTB_PNO-SIZEG,
+        MENGE_ORDER TYPE ZMMTB_PNO-MENGE_ORDER,
+        KWMENG      TYPE VBAP-KWMENG,
+       END OF TY_ZMMTB_PNO2.
+
+
+ DATA : it_split        TYPE STANDARD TABLE OF ty_split WITH HEADER LINE,
+        wa_split        TYPE ty_split,
+*        IT_TEXT         TYPE STANDARD TABLE OF TY_TEXT WITH HEADER LINE,
+*        WA_TEXT         TYPE TY_TEXT,
+        it_vbkd         LIKE STANDARD TABLE OF vbkd WITH HEADER LINE,
+        wa_vbkd         TYPE vbkd,
+        it_vbkdap       TYPE STANDARD TABLE OF ty_vbkdap WITH HEADER LINE,
+        wa_vbkdap       TYPE ty_vbkdap,
+        it_vbap         LIKE STANDARD TABLE OF vbap WITH HEADER LINE,
+        wa_vbap         TYPE vbap,
+        it_zmmtb_pno    TYPE STANDARD TABLE OF zmmtb_pno WITH HEADER LINE,
+        wa_zmmtb_pno    TYPE  zmmtb_pno,
+        it_zmmtb_pno2   TYPE STANDARD TABLE OF ty_zmmtb_pno2 WITH HEADER LINE,
+        wa_zmmtb_pno2   TYPE ty_zmmtb_pno2,
+        it_zmmtb_matvar LIKE STANDARD TABLE OF zmmtb_matvar WITH HEADER LINE,
+        wa_zmmtb_matvar TYPE zmmtb_matvar,
+        it_eban         type STANDARD TABLE OF ty_eban WITH HEADER LINE,
+        wa_eban         TYPE ty_eban,
+        gw_layout       TYPE slis_layout_alv,
+        gt_cat          TYPE slis_t_fieldcat_alv,
+        gw_cat          TYPE slis_fieldcat_alv,
+        gt_event        TYPE slis_t_event,
+        gw_event        TYPE slis_alv_event,
+        gt_sort         TYPE slis_t_sortinfo_alv,
+        gw_sort         TYPE slis_sortinfo_alv,
+        G_REPID         TYPE SY-REPID,
+        IT_LISTHEADER   TYPE SLIS_T_LISTHEADER,
+        WA_LISTHEADER   TYPE SLIS_LISTHEADER,
+
+        BDCDATA         LIKE BDCDATA  OCCURS 0 WITH HEADER LINE,
+        MESSTAB         LIKE BDCMSGCOLL OCCURS 0 WITH HEADER LINE,
+        LV_MESSAGE      TYPE STRING.
+"===============================================================DATA FM READ TEXT==================================================
+
+DATA: BEGIN OF HTEXT.
+INCLUDE STRUCTURE THEAD.
+DATA: END OF HTEXT.
+
+DATA: BEGIN OF LTEXT OCCURS 50.
+INCLUDE STRUCTURE TLINE.
+DATA: END OF LTEXT.
+
+DATA IT_TEXT TYPE TABLE OF TLINE.
+DATA : WA_TEXT LIKE LINE OF IT_TEXT.
+
+"=============================================================END OF DATA READ TEXT================================================
+ SELECTION-SCREEN BEGIN OF BLOCK a1 WITH FRAME TITLE TEXT-001.
+      SELECT-OPTIONS :  s_werks FOR vbap-werks NO INTERVALS NO-EXTENSION OBLIGATORY,
+                        s_vbeln FOR vbkd-vbeln,
+                        s_banfn FOR eban-banfn.
+ SELECTION-SCREEN END OF BLOCK a1.
+
+ PERFORM get_data.
+ PERFORM proses_data.
+
+  PERFORM HEADER.
+
+  IF IT_SPLIT  IS NOT INITIAL.
+    LV_MESSAGE ='Data Not Found'.
+    MESSAGE LV_MESSAGE TYPE 'E'.
+  ELSE.
+    LV_MESSAGE ='Display Data'.
+    MESSAGE LV_MESSAGE TYPE 'S'.
+    PERFORM display_data.
+
+  ENDIF.
+
+
+
+
+ FORM get_data.
+   SELECT DISTINCT d~vbeln d~posnr d~bstkd p~matnr p~abgru p~werks p~kwmeng z~zmatgen z~color_value z~size_value E~BANFN
+      INTO TABLE it_vbkdap "p~matnr p~abgru p~werks p~kwmeng
+      FROM vbkd as d
+      INNER JOIN vbap as p on p~vbeln = d~vbeln and p~posnr = d~posnr
+      INNER JOIN zmmtb_matvar as z on p~matnr = z~zmatvar
+      INNER JOIN EBKN AS E ON E~VBELN = D~VBELN
+      WHERE d~vbeln IN s_vbeln
+      and p~werks in s_werks
+      AND E~BANFN IN S_BANFN
+      and d~BSTKD eq 'FINAL SAMPLE'.
+
+IF IT_VBKDAP[] IS NOT INITIAL.
+
+  select * from zmmtb_pno INTO TABLE it_zmmtb_pno
+    FOR ALL ENTRIES IN it_vbkdap
+    WHERE vbeln = it_vbkdap-vbeln and colorg = it_vbkdap-color_value
+    and ( sizeg = it_vbkdap-size_value or sizeg eq ' ').
+
+  SELECT k~vbeln A~BANFN a~bnfpo a~matnr a~menge a~ebeln a~loekz a~meins a~ekgrp a~werks a~matkl a~lfdat a~bwtar  k~vbelp
+    into table it_eban
+    from eban as a
+    inner JOIN ebkn as k on k~banfn = a~banfn
+    FOR ALL ENTRIES IN it_zmmtb_pno
+    WHERE k~vbeln = it_zmmtb_pno-vbeln
+    and a~matnr = it_zmmtb_pno-matnr
+    and a~ebeln eq ' '
+    and a~loekz eq ' '.
+
+ENDIF.
+
+
+
+ ENDFORM.
+
+
+
+FORM PROSES_DATA.
+  DATA : RQTYPRFS TYPE P DECIMALS 2,
+         RQTYPRBLK TYPE P DECIMALS 2.
+
+ LOOP AT IT_ZMMTB_PNO INTO WA_ZMMTB_PNO.
+    WA_ZMMTB_PNO2-VBELN        = WA_ZMMTB_PNO-VBELN.
+    WA_ZMMTB_PNO2-MATNR        = WA_ZMMTB_PNO-MATNR.
+    WA_ZMMTB_PNO2-MENGE_ORDER  = WA_ZMMTB_PNO-MENGE_ORDER.
+
+ READ TABLE IT_VBKDAP INTO WA_VBKDAP WITH KEY VBELN = WA_ZMMTB_PNO-VBELN COLOR_VALUE = WA_ZMMTB_PNO-COLORG.
+ IF SY-SUBRC EQ 0.
+   WA_ZMMTB_PNO2-KWMENG       =  WA_VBKDAP-KWMENG.
+ ENDIF.
+
+ COLLECT WA_ZMMTB_PNO2 INTO IT_ZMMTB_PNO2.
+ CLEAR WA_ZMMTB_PNO2.
+
+ ENDLOOP.
+
+
+
+LOOP AT IT_EBAN INTO WA_EBAN.
+
+    WA_SPLIT-BANFN    = WA_EBAN-BANFN.
+    WA_SPLIT-BNFPO    = WA_EBAN-BNFPO.
+    WA_SPLIT-QTYPR    = WA_EBAN-MENGE.
+    WA_SPLIT-VBELN    = WA_EBAN-VBELN.
+    WA_SPLIT-MATNR    = WA_EBAN-MATNR.
+    WA_SPLIT-EKGRP    = WA_EBAN-EKGRP.
+    WA_SPLIT-WERKS    = WA_EBAN-WERKS.
+    WA_SPLIT-MATKL    = WA_EBAN-MATKL.
+    WA_SPLIT-MEINS    = WA_EBAN-MEINS.
+    WA_SPLIT-LFDAT    = WA_EBAN-LFDAT.
+    WA_SPLIT-BWTAR    = WA_EBAN-BWTAR.
+    WA_SPLIT-VBELP    = WA_EBAN-VBELP.
+    CONCATENATE WA_SPLIT-BANFN WA_SPLIT-BNFPO INTO WA_SPLIT-TDNAME.
+
+
+    CALL FUNCTION 'READ_TEXT'
+  EXPORTING
+*   CLIENT                        = SY-MANDT
+    id                            = 'B01'
+    language                      = 'E'
+    NAME                          =  WA_SPLIT-TDNAME
+    OBJECT                        = 'EBAN'
+*   ARCHIVE_HANDLE                = 0
+*   LOCAL_CAT                     = ' '
+ IMPORTING
+   HEADER                        = HTEXT
+*   OLD_LINE_COUNTER              =
+  TABLES
+    lines                         = IT_TEXT[]
+ EXCEPTIONS
+   ID                            = 1
+   LANGUAGE                      = 2
+   NAME                          = 3
+   NOT_FOUND                     = 4
+   OBJECT                        = 5
+   REFERENCE_CHECK               = 6
+   WRONG_ACCESS_TO_ARCHIVE       = 7
+   OTHERS                        = 8
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ELSE.
+      LOOP AT IT_TEXT INTO WA_TEXT.
+        IF sy-tabix = 1.
+          WA_SPLIT-TEXTPR = WA_TEXT-tdline.
+        ENDIF.
+      ENDLOOP.
+    ENDIF.
+
+
+
+ IF WA_SPLIT-TEXTPR = 'FINAL SAMPLE'.
+  WA_SPLIT-LINE_COLOR = 'C400'.
+  WA_SPLIT-MARKS = 'RESULT OF SPLIITTED PR'.
+ Elseif WA_SPLIT-TEXTPR = 'BULK ORDER'.
+   WA_SPLIT-MARKS = 'ITEM ALREADY SPLITTED'.
+ ENDIF.
+
+
+
+CALL FUNCTION 'CONVERSION_EXIT_PDATE_OUTPUT'
+  EXPORTING
+    input         = WA_EBAN-LFDAT
+ IMPORTING
+   OUTPUT         = WA_SPLIT-LFDAT.
+
+CALL FUNCTION 'CONVERSION_EXIT_CUNIT_OUTPUT'
+  EXPORTING
+    input                = wa_eban-meins
+*   LANGUAGE             = SY-LANGU
+ IMPORTING
+*   LONG_TEXT            =
+   OUTPUT               = wa_split-meins
+*   SHORT_TEXT           =
+* EXCEPTIONS
+*   UNIT_NOT_FOUND       = 1
+*   OTHERS               = 2
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+
+
+READ TABLE IT_ZMMTB_PNO2 INTO WA_ZMMTB_PNO2 WITH KEY VBELN = WA_EBAN-VBELN MATNR = WA_EBAN-MATNR.
+    IF SY-SUBRC EQ 0.
+    WA_SPLIT-QTYORDER  = WA_ZMMTB_PNO2-MENGE_ORDER.
+    WA_SPLIT-QTYSAMPLE = WA_ZMMTB_PNO2-KWMENG.
+    WA_SPLIT-QTYPRFS   = ( WA_SPLIT-QTYSAMPLE / WA_SPLIT-QTYORDER ) * WA_SPLIT-QTYPR.
+    WA_SPLIT-QTYPRBLK  = WA_SPLIT-QTYPR - WA_SPLIT-QTYPRFS.
+    WA_SPLIT-TEXTBLK   = 'BULK ORDER'.
+    WA_SPLIT-TEXTSMP  = 'FINAL SAMPLE'.
+
+   ENDIF.
+
+   APPEND WA_SPLIT TO IT_SPLIT.
+   sort it_split by banfn bnfpo.
+   CLEAR WA_SPLIT.
+
+ENDLOOP.
+
+
+
+ENDFORM.
+
+FORM DISPLAY_DATA. "USING ucomm TYPE sy-ucomm.
+DATA : it_event_exit TYPE slis_t_event_exit,
+       wa_event_exit TYPE slis_event_exit.
+
+PERFORM FILL_FIELDCAT.
+  GW_LAYOUT-ZEBRA = 'X'.
+  GW_LAYOUT-INFO_FIELDNAME = 'LINE_COLOR'.
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      I_CALLBACK_PROGRAM      = SY-REPID
+      I_CALLBACK_TOP_OF_PAGE  = 'TOP_OF_PAGE'
+*     I_GRID_TITLE            = 'IRWAN'
+*      I_CALLBACK_USER_COMMAND = 'HANDLE_USER_COMMAND'
+      i_callback_user_command  = 'USER_COMMAND'
+      i_callback_pf_status_set = 'PF'
+      it_event_exit            = it_event_exit
+      IS_LAYOUT               = GW_LAYOUT
+      IT_FIELDCAT             = GT_CAT
+      I_DEFAULT               = ''
+      I_SAVE                  = 'X'
+    TABLES
+      T_OUTTAB                = IT_SPLIT
+    EXCEPTIONS
+      PROGRAM_ERROR           = 1
+      OTHERS                  = 2.
+  IF SY-SUBRC <> 0.
+  ENDIF.
+
+
+ENDFORM.
+
+
+FORM USER_COMMAND USING UCOMM TYPE SY-UCOMM
+      SELFIELD TYPE SLIS_SELFIELD.
+
+Data ref1 type ref to cl_gui_alv_grid.
+
+
+ CASE UCOMM.
+  WHEN '&EXE'.  "'&EXE'.
+    CALL FUNCTION 'GET_GLOBALS_FROM_SLVC_FULLSCR'
+    IMPORTING
+     E_GRID = ref1.
+     call method ref1->check_changed_data.
+    IT_split-check = 'X'.
+       PERFORM BDC_PROSES.
+*       selfield-refresh = 'X'.
+*    loop at IT_SPLIT INTO WA_SPLIT. "INDEX SELFIELD-TABINDEX.
+*
+*      WA_SPLIT-CHECK = 'X'.
+*    MODIFY IT_SPLIT FROM WA_SPLIT INDEX SELFIELD-TABINDEX.
+
+*   endloop.
+
+
+   WHEN '&SEL'.
+
+     LOOP AT IT_SPLIT INTO WA_SPLIT. "WHERE CHECK = 'X'.
+       WA_SPLIT-CHECK = 'X'.
+       MODIFY IT_SPLIT FROM WA_SPLIT.
+       selfield-refresh = 'X'.
+     ENDLOOP.
+
+    WHEN '&DES'.
+      LOOP AT IT_SPLIT INTO WA_SPLIT.
+         WA_SPLIT-CHECK = ' '.
+         MODIFY IT_SPLIT FROM WA_SPLIT.
+         selfield-refresh = 'X'.
+      ENDLOOP.
+
+    WHEN '&REF'.
+      LOOP AT IT_SPLIT INTO WA_SPLIT.
+        selfield-refresh = 'X'.
+      MODIFY IT_SPLIT FROM WA_SPLIT.
+      ENDLOOP.
+
+
+ ENDCASE.
+
+
+
+ENDFORM.
+
+
+
+FORM BDC_PROSES.
+
+LOOP AT IT_SPLIT INTO WA_SPLIT WHERE CHECK EQ 'X'.
+
+
+perform bdc_dynpro      using 'SAPMM06B' '0105'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'EBAN-BANFN'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '/00'.
+perform bdc_field       using 'EBAN-BANFN'
+                              WA_SPLIT-BANFN.
+perform bdc_dynpro      using 'SAPMM06B' '0106'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'RM06B-BNFPO'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '/00'.
+perform bdc_field       using 'RM06B-BNFPO'
+                              WA_SPLIT-BNFPO.
+perform bdc_dynpro      using 'SAPMM06B' '0106'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'EBAN-MENGE(01)'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '/00'.
+perform bdc_field       using 'RM06B-BNFPO'
+                              WA_SPLIT-BNFPO.
+perform bdc_field       using 'RM06B-TCSELFLAG(01)'
+                              'X'.
+perform bdc_field       using 'EBAN-MENGE(01)'
+                              WA_SPLIT-QTYPRBLK.
+perform bdc_dynpro      using 'SAPMM06B' '0102'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'EBAN-MENGE'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '=TXP'.
+perform bdc_field       using 'EBAN-MENGE'
+                              WA_SPLIT-QTYPRBLK.
+perform bdc_dynpro      using 'SAPMM06B' '0103'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'RM06B-LTEX1(01)'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '=BACK'.
+perform bdc_field       using 'RM06B-LTEX1(01)'
+                              WA_SPLIT-TEXTBLK.
+perform bdc_dynpro      using 'SAPMM06B' '0106'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'EBAN-MENGE(01)'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '=NP'.
+perform bdc_field       using 'RM06B-BNFPO'
+                              WA_SPLIT-BNFPO.
+perform bdc_dynpro      using 'SAPMM06B' '0106'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'EBAN-WERKS(02)'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '=DETA'.
+perform bdc_field       using 'EBAN-MATNR(02)'
+                              WA_SPLIT-MATNR. "NEW
+perform bdc_field       using 'EBAN-MENGE(02)'
+                              WA_SPLIT-QTYPRFS.
+perform bdc_field       using 'EBAN-MEINS(02)'
+                              WA_SPLIT-MEINS.     "NEW
+perform bdc_field       using 'RM06B-EEIND(02)'
+                              WA_SPLIT-LFDAT. " NEW
+perform bdc_field       using 'EBAN-MATKL(02)'
+                              WA_SPLIT-MATKL. "NEW
+perform bdc_dynpro      using 'SAPMM06B' '0102'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'EBAN-BWTAR'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '=KN'.
+perform bdc_field       using 'EBAN-MENGE'
+                              WA_SPLIT-QTYPRFS.
+perform bdc_field       using 'EBAN-BWTAR'
+                              WA_SPLIT-BWTAR. "NEW
+perform bdc_dynpro      using 'SAPMM06B' '0505'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'EBKN-SAKTO'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '=ENTE'.
+perform bdc_dynpro      using 'SAPLKACB' '0002'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'COBL-KDPOS'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '=ENTE'.
+perform bdc_field       using 'COBL-KDAUF'
+                              WA_SPLIT-VBELN. "NEW
+perform bdc_field       using 'COBL-KDPOS'
+                              WA_SPLIT-VBELP.    "NEW
+perform bdc_dynpro      using 'SAPMM06B' '0102'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'EBAN-MENGE'.
+perform bdc_field       using 'EBAN-MENGE'
+                              WA_SPLIT-QTYPRFS.
+perform bdc_field       using 'EBAN-PEINH'
+                              '1'.
+perform bdc_field       using 'EBAN-REPOS'
+                              'X'.
+perform bdc_field       using 'EBAN-BWTAR'
+                              WA_SPLIT-BWTAR.
+perform bdc_dynpro      using 'SAPMM06B' '0106'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'EBAN-BNFPO(02)'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '=TXP'.
+*perform bdc_field       using 'RM06B-BNFPO'
+*                              '22'.
+perform bdc_field       using 'RM06B-TCSELFLAG(02)'
+                              'X'.
+perform bdc_dynpro      using 'SAPMM06B' '0103'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'RM06B-LTEX1(01)'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '=BACK'.
+perform bdc_field       using 'RM06B-LTEX1(01)'
+                              WA_SPLIT-TEXTSMP.
+perform bdc_dynpro      using 'SAPMM06B' '0106'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'EBAN-BNFPO(02)'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '=BU'.
+*perform bdc_field       using 'RM06B-BNFPO'
+*
+                              .
+*perform bdc_transaction using 'ME52'.
+
+*perform close_group.
+
+CALL TRANSACTION 'ME52'
+USING BDCDATA
+UPDATE 'S'
+MODE 'E'
+MESSAGES INTO MESSTAB.
+
+CLEAR WA_SPLIT.
+REFRESH BDCDATA.
+CLEAR BDCDATA.
+REFRESH MESSTAB.
+CLEAR MESSTAB.
+
+
+ENDLOOP.
+
+
+ENDFORM.
+
+
+*----------------------------------------------------------------------*
+*        Start new screen                                              *
+*----------------------------------------------------------------------*
+FORM BDC_DYNPRO USING PROGRAM DYNPRO.
+  CLEAR BDCDATA.
+  BDCDATA-PROGRAM  = PROGRAM.
+  BDCDATA-DYNPRO   = DYNPRO.
+  BDCDATA-DYNBEGIN = 'X'.
+  APPEND BDCDATA.
+ENDFORM.
+
+*----------------------------------------------------------------------*
+*        Insert field                                                  *
+*----------------------------------------------------------------------*
+FORM BDC_FIELD USING FNAM FVAL.
+  IF FVAL <> SPACE.
+    CLEAR BDCDATA.
+    BDCDATA-FNAM = FNAM.
+    BDCDATA-FVAL = FVAL.
+    SHIFT bdcdata-fval LEFT DELETING LEADING space.
+    APPEND BDCDATA.
+  ENDIF.
+ENDFORM.
+
+
+
+
+FORM fill_fieldcat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'CHECK'.
+  gw_cat-tabname = 'IT_SPLIT'.
+  gw_cat-checkbox = 'X'.
+  GW_CAT-EDIT = 'X'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'CHECKBOX'.
+  APPEND gw_cat TO gt_cat.
+
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'VBELN'.
+  gw_cat-tabname = 'IT_SPLIT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Sales Ord'.
+  APPEND gw_cat TO gt_cat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'BANFN'.
+  gw_cat-tabname = 'IT_SPLIT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Purc Req'.
+  APPEND gw_cat TO gt_cat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'BNFPO'.
+  gw_cat-tabname = 'IT_SPLIT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Item PR'.
+ APPEND gw_cat TO gt_cat.
+
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'MATNR'.
+  gw_cat-tabname = 'IT_SPLIT'.
+  gw_cat-outputlen = 40.
+  gw_cat-seltext_l = 'MATERIAL'.
+  APPEND gw_cat TO gt_cat.
+
+
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'QTYORDER'.
+  gw_cat-tabname = 'IT_SPLIT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'QTY Order'.
+  APPEND gw_cat TO gt_cat.
+
+CLEAR: gw_cat.
+  gw_cat-fieldname = 'QTYSAMPLE'.
+  gw_cat-tabname = 'IT_SPLIT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'QTY Sample'.
+  APPEND gw_cat TO gt_cat.
+
+CLEAR: gw_cat.
+  gw_cat-fieldname = 'QTYPR'.
+  gw_cat-tabname = 'IT_SPLIT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'QTY PR'.
+  APPEND gw_cat TO gt_cat.
+
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'QTYPRBLK'.
+  gw_cat-tabname = 'IT_SPLIT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'QTY PR Bulk'.
+  APPEND gw_cat TO gt_cat.
+
+CLEAR: gw_cat.
+  gw_cat-fieldname = 'QTYPRFS'.
+  gw_cat-tabname = 'IT_SPLIT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'QTY PR FS'.
+  APPEND gw_cat TO gt_cat.
+
+CLEAR: gw_cat.
+  gw_cat-fieldname = 'TEXTBLK'.
+  gw_cat-tabname = 'IT_SPLIT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Text Bulk'.
+  APPEND gw_cat TO gt_cat.
+
+CLEAR: gw_cat.
+  gw_cat-fieldname = 'TEXTSMP'.
+  gw_cat-tabname = 'IT_SPLIT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Text Sample'.
+  APPEND gw_cat TO gt_cat.
+
+CLEAR: gw_cat.
+  gw_cat-fieldname = 'MARKS'.
+  gw_cat-tabname = 'IT_SPLIT'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'REMARKS'.
+  APPEND gw_cat TO gt_cat.
+
+ENDFORM.
+
+
+
+FORM HEADER.
+
+  WA_LISTHEADER-TYP  = 'H'.
+  WA_LISTHEADER-INFO ='List Of Purch. Req'.
+  APPEND WA_LISTHEADER TO IT_LISTHEADER.
+  CLEAR WA_LISTHEADER.
+
+  WA_LISTHEADER-TYP = 'S'.
+  WA_LISTHEADER-KEY = 'DATE :' .
+  CONCATENATE  SY-DATUM+6(2)
+               SY-DATUM+4(2)
+               SY-DATUM(4)
+               INTO WA_LISTHEADER-INFO
+               SEPARATED BY '.'.
+  APPEND WA_LISTHEADER TO IT_LISTHEADER.
+  CLEAR WA_LISTHEADER.
+
+  WA_LISTHEADER-TYP = 'A'.
+  WA_LISTHEADER-INFO ='Please give Checking Mark on item and click execute to split PR'.
+  APPEND WA_LISTHEADER TO IT_LISTHEADER.
+  CLEAR WA_LISTHEADER.
+ENDFORM.
+
+
+
+FORM TOP_OF_PAGE.
+
+  CALL FUNCTION 'REUSE_ALV_COMMENTARY_WRITE'
+    EXPORTING
+      IT_LIST_COMMENTARY = IT_LISTHEADER.
+
+
+ENDFORM.
+
+
+FORM pf USING rt_extab TYPE slis_t_extab.
+  SET PF-STATUS 'ZMMRP_SPLITPR'.
+  .
+
+
+ENDFORM.
