@@ -1,0 +1,590 @@
+*&---------------------------------------------------------------------*
+*&Report ZSDRP_FP_WEB
+*&Program Download data FP to Web Req by Accounting ESGI Designed by Pak Nico, Irwan*
+*&
+*&---------------------------------------------------------------------*
+REPORT zsdrp_fp_web.
+
+TABLES : vbrk, vbrp, kna1,t001w, dfkkbptaxnum, zsdtb_pebinv.
+TYPE-POOLS : slis.
+
+TYPES : BEGIN OF ty_report,
+        invdate       TYPE zsdtb_pebinv-invoice_date,
+        npwpcust      TYPE dfkkbptaxnum-taxnum,
+        namecust      TYPE kna1-name1,
+        addrcust      TYPE kna1-name1,
+        ref           TYPE c LENGTH 25,
+        npwpsel       TYPE c LENGTH 20,
+        matnr         TYPE vbrp-matnr,
+        arktx         TYPE vbrp-arktx,
+        dpp           TYPE vbrp-netwr,
+        ppn           TYPE vbrp-mwsbp,
+        cmpre         TYPE vbrp-cmpre,
+        fkimg         TYPE vbrp-fkimg,
+        pricetot      TYPE p DECIMALS 2,
+        disc          TYPE p DECIMALS 2,
+        exchange TYPE p DECIMALS 2,
+        END OF ty_report,
+
+        BEGIN OF ty_cust,
+        kunnr         TYPE kna1-kunnr,
+        name1         TYPE kna1-name1,
+        adrnr         TYPE kna1-adrnr,
+        street        TYPE adrc-street,
+        taxnum        TYPE dfkkbptaxnum-taxnum,
+        END OF ty_cust,
+
+        BEGIN OF ty_billing,
+        tknum         TYPE zsdtb_pebinv-tknum,
+        invoice_no    TYPE zsdtb_pebinv-invoice_no,
+        invoice_date  TYPE zsdtb_pebinv-invoice_date,
+        vbeln         TYPE vbrk-vbeln,
+        fkdat         TYPE vbrk-fkdat,
+        cmkuf         TYPE vbrk-cmkuf,
+        fksto         TYPE vbrk-fksto,
+        fkart         TYPE vbrk-fkart,
+        waerk         TYPE vbrk-waerk,
+        kunrg         TYPE vbrk-kunrg,
+        zzpro_in_no   TYPE vbrk-zzpro_in_no,
+        vkorg         TYPE vbrk-vkorg,
+        werks         TYPE vbrp-werks,
+        fkimg         TYPE vbrp-fkimg,
+        cmpre         TYPE vbrp-cmpre,
+        netwr         TYPE vbrp-netwr,
+        matnr         TYPE vbrp-matnr,
+        arktx         TYPE vbrp-arktx,
+        mwsbp         TYPE vbrp-mwsbp,
+        taxnum        TYPE zsdtb_plant_tax-taxnum,
+        rate          TYPE p DECIMALS 2,
+        END OF ty_billing.
+
+ TYPES : BEGIN OF ty_text,
+          text(30000) TYPE c,
+        END OF ty_text.
+
+
+ DATA : it_report     TYPE STANDARD TABLE OF ty_report WITH HEADER LINE,
+        wa_report     TYPE ty_report,
+        it_billing    TYPE STANDARD TABLE OF ty_billing WITH HEADER LINE,
+        wa_billing    TYPE ty_billing,
+        it_cust       TYPE STANDARD TABLE OF ty_cust WITH HEADER LINE,
+        wa_cust       TYPE ty_cust,
+
+*               STANDARD LAYOUT OF SAP
+        gw_layout       TYPE slis_layout_alv,
+        gt_cat          TYPE slis_t_fieldcat_alv,
+        gw_cat          TYPE slis_fieldcat_alv,
+        gt_event        TYPE slis_t_event,
+        gw_event        TYPE slis_alv_event,
+        gt_sort         TYPE slis_t_sortinfo_alv,
+        gw_sort         TYPE slis_sortinfo_alv,
+        gt_text         TYPE TABLE OF ty_text WITH HEADER LINE,
+        gw_text         TYPE ty_text.
+
+   DATA : lv_message   TYPE string,
+          text15       TYPE string VALUE 'Error Message: '.
+
+
+SELECTION-SCREEN BEGIN OF BLOCK b WITH FRAME TITLE TEXT-002.
+PARAMETERS :
+  p_rad1 RADIOBUTTON GROUP rad DEFAULT 'X',   " display
+  p_rad2 RADIOBUTTON GROUP rad.               " send to web
+SELECTION-SCREEN END OF BLOCK b.
+
+
+ SELECTION-SCREEN BEGIN OF BLOCK a WITH FRAME TITLE TEXT-001.
+   SELECT-OPTIONS :
+      s_plant     FOR vbrp-werks OBLIGATORY NO INTERVALS NO-EXTENSION,
+      s_invd      FOR zsdtb_pebinv-invoice_date,
+      s_sj        FOR zsdtb_pebinv-tknum NO INTERVALS NO-EXTENSION,
+      s_inv       FOR zsdtb_pebinv-invoice_no NO INTERVALS NO-EXTENSION.
+
+   SELECTION-SCREEN END OF BLOCK a.
+
+   START-OF-SELECTION.
+
+   PERFORM get_data.
+   PERFORM proses_data.
+
+IF p_rad1 EQ 'X'.
+   PERFORM display_data.
+ENDIF.
+
+IF p_rad2 EQ 'X'.
+   PERFORM send_web.
+ENDIF.
+
+   FORM get_data.
+
+      DATA:
+      ld_exch_rate   TYPE bapi1093_0,
+      ld_return	     TYPE bapiret1.
+
+
+     SELECT z~tknum z~invoice_no z~invoice_date
+            k~vbeln k~fkdat k~cmkuf k~fksto k~fkart k~waerk k~kunrg k~zzpro_in_no k~vkorg
+            p~werks p~fkimg p~cmpre p~netwr p~matnr p~arktx p~mwsbp
+       INTO TABLE it_billing
+       FROM zsdtb_pebinv AS z
+       INNER JOIN vbrk AS k ON z~invoice_no = k~zzpro_in_no
+       INNER JOIN vbrp AS p ON p~vbeln  = k~vbeln
+       WHERE p~werks IN s_plant AND
+             z~invoice_date IN s_invd AND
+             z~tknum IN s_sj AND
+             z~invoice_no IN s_inv AND
+             p~fkimg NE ' ' AND
+             k~fksto EQ ' ' AND
+             k~fkart NE 'B090'.
+
+ LOOP AT it_billing INTO wa_billing.
+   SELECT SINGLE taxnum INTO wa_billing-taxnum FROM zsdtb_plant_tax
+     WHERE  werks = wa_billing-werks.
+
+
+     CALL FUNCTION 'BAPI_EXCHANGERATE_GETDETAIL'
+       EXPORTING
+         rate_type        = 'M'
+         from_curr        = 'USD'
+         to_currncy       = 'IDR'
+         date             = wa_billing-invoice_date
+      IMPORTING
+        exch_rate        = ld_exch_rate
+        return           = ld_return.
+
+     wa_billing-rate = ld_exch_rate-exch_rate * 1000.
+
+
+     MODIFY it_billing FROM wa_billing.
+ ENDLOOP.
+ CLEAR wa_billing.
+
+     SELECT k~kunnr k~name1 k~adrnr a~street d~taxnum
+       INTO TABLE it_cust FROM kna1 AS k
+       INNER JOIN adrc AS a ON k~adrnr = a~addrnumber
+       LEFT OUTER JOIN dfkkbptaxnum AS d ON d~partner = k~kunnr
+       FOR ALL ENTRIES IN it_billing
+       WHERE k~kunnr = it_billing-kunrg.
+
+     ENDFORM.
+
+ FORM proses_data.
+   DATA : "kurs2  type p decimals 2,
+          kurs   TYPE c LENGTH 10.
+
+   LOOP AT it_billing INTO wa_billing.
+
+   wa_report-invdate = wa_billing-invoice_date.
+*   kurs = wa_billing-cmkuf * 1000.
+   wa_report-exchange = wa_billing-rate.
+   wa_report-ref = wa_billing-invoice_no.
+*   CONCATENATE wa_billing-invoice_no  INTO wa_report-ref SEPARATED BY ','.
+   wa_report-npwpsel  = wa_billing-taxnum.
+   wa_report-matnr = wa_billing-matnr.
+   wa_report-arktx = wa_billing-arktx.
+
+   IF wa_billing-waerk = 'USD'.
+     wa_report-dpp = wa_billing-netwr   * wa_billing-rate.
+     wa_report-ppn = wa_billing-mwsbp   * wa_billing-rate.
+     wa_report-cmpre = wa_billing-cmpre * wa_billing-rate .
+   ELSEIF wa_billing-waerk = 'IDR'.
+     wa_report-dpp = wa_billing-netwr * 100.
+     wa_report-ppn = wa_billing-mwsbp * 100.
+     wa_report-cmpre = wa_billing-cmpre * 100.
+   ENDIF.
+
+
+   wa_report-fkimg = wa_billing-fkimg.
+   wa_report-pricetot = wa_report-cmpre * wa_report-fkimg.
+
+
+   READ TABLE it_cust INTO wa_cust WITH KEY kunnr = wa_billing-kunrg.
+   IF sy-subrc EQ 0.
+
+   wa_report-npwpcust = wa_cust-taxnum.
+   wa_report-addrcust = wa_cust-street.
+   wa_report-namecust = wa_cust-name1.
+
+   ENDIF.
+
+   APPEND wa_report TO it_report.
+   CLEAR wa_report.
+
+
+  ENDLOOP.
+
+   ENDFORM.
+
+   FORM display_data.
+    DATA : it_event_exit TYPE slis_t_event_exit,
+         wa_event_exit TYPE slis_event_exit.
+  PERFORM fill_fieldcat.
+  gw_layout-zebra = 'X'.
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program = sy-repid
+*      i_callback_top_of_page  = 'TOP_OF_PAGE'
+*      i_callback_pf_status_set = 'PF'
+      it_event_exit            = it_event_exit
+      is_layout          = gw_layout
+      it_fieldcat        = gt_cat
+      i_default          = ''
+      i_save             = 'X'
+    TABLES
+      t_outtab           = it_report.
+
+  IF sy-subrc <> 0.
+  ENDIF.
+
+  ENDFORM.
+
+
+
+  FORM fill_fieldcat.
+
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'INVDATE'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Masa Pajak'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'NPWPCUST'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'NPWP Cust'.
+  APPEND gw_cat TO gt_cat.
+
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'NAMECUST'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = 'Nama Cuts.'.
+  APPEND gw_cat TO gt_cat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'ADDRCUST'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Alamat Lengkap'.
+  APPEND gw_cat TO gt_cat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'REF'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 25.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Referensi'.
+ APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'NPWPSEL'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'NPWP'.
+  APPEND gw_cat TO gt_cat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'MATNR'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 40.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Kode Objek'.
+ APPEND gw_cat TO gt_cat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'ARKTX'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 40.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Descr. (Nama)'.
+  APPEND gw_cat TO gt_cat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'DPP'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'DPP'.
+ APPEND gw_cat TO gt_cat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'PPN'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'PPn'.
+  APPEND gw_cat TO gt_cat.
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'CMPRE'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Harga Satuan'.
+ APPEND gw_cat TO gt_cat.
+
+
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'FKIMG'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Jumlah Barang'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'PRICETOT'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Harga Total'.
+ APPEND gw_cat TO gt_cat.
+
+
+
+ CLEAR: gw_cat.
+  gw_cat-fieldname = 'DISC'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Diskon'.
+  APPEND gw_cat TO gt_cat.
+
+
+ENDFORM.
+
+
+ FORM send_web.
+   DATA : lv_dpp      TYPE c LENGTH 13,
+          lv_ppn      TYPE c LENGTH 13,
+          lv_cmpre    TYPE c LENGTH 13,
+          lv_fkimg    TYPE c LENGTH 13,
+          lv_pricetot TYPE c LENGTH 13,
+          lv_disc     TYPE c LENGTH 13,
+          lv_exchange     TYPE c LENGTH 13,
+          lv_invdate  TYPE c LENGTH 13.
+
+   LOOP AT it_report INTO wa_report.
+
+     CONCATENATE
+     wa_report-invdate(4)
+     wa_report-invdate+4(2)
+     wa_report-invdate+4(2)
+     INTO lv_invdate SEPARATED BY '-'.
+
+     lv_dpp   = wa_report-dpp.
+     lv_ppn   = wa_report-ppn.
+     lv_cmpre = wa_report-cmpre.
+     lv_fkimg = wa_report-fkimg.
+     lv_pricetot = wa_report-pricetot.
+     lv_disc  = wa_report-disc.
+     lv_exchange = wa_report-exchange.
+
+     CONCATENATE
+     lv_invdate
+     wa_report-npwpcust
+     wa_report-namecust
+     wa_report-addrcust
+     wa_report-ref
+     wa_report-npwpsel
+     wa_report-matnr
+     wa_report-arktx
+     lv_dpp
+     lv_ppn
+     lv_cmpre
+     lv_fkimg
+     lv_pricetot
+     lv_disc
+     lv_exchange
+
+      INTO gw_text
+      SEPARATED BY cl_abap_char_utilities=>horizontal_tab.
+      APPEND gw_text TO gt_text.
+     ENDLOOP.
+     CLEAR wa_report.
+
+    DATA:
+        filename      TYPE string,
+        filetitle     TYPE string,
+        filefullname  TYPE string,
+        year          TYPE string,
+        plant         TYPE string.
+
+   filename = '\\192.168.11.249\Web_Sup\Prod\Inv_SAP\Input\'.
+   CONCATENATE sy-datum sy-uzeit INTO filetitle SEPARATED BY '_'.
+   CONCATENATE filename filetitle '.TXT' INTO filefullname.
+
+     CALL FUNCTION 'GUI_DOWNLOAD'
+    EXPORTING
+*     BIN_FILESIZE             =
+      filename                 = filefullname
+*     FILETYPE                 = 'ASC'
+*     APPEND                   = ' '
+*     WRITE_FIELD_SEPARATOR    = ' '
+*     HEADER                   = '00'
+*     TRUNC_TRAILING_BLANKS    = ' '
+*     WRITE_LF                 = 'X'
+*     COL_SELECT               = ' '
+*     COL_SELECT_MASK          = ' '
+*     DAT_MODE                 = ' '
+*     CONFIRM_OVERWRITE        = ' '
+*     NO_AUTH_CHECK            = ' '
+*     CODEPAGE                 = ' '
+      ignore_cerr              = abap_true
+*     REPLACEMENT              = '#'
+*     WRITE_BOM                = ' '
+*     TRUNC_TRAILING_BLANKS_EOL       = 'X'
+*     WK1_N_FORMAT             = ' '
+*     WK1_N_SIZE               = ' '
+*     WK1_T_FORMAT             = ' '
+*     WK1_T_SIZE               = ' '
+      write_lf_after_last_line = abap_true
+      show_transfer_status     = abap_true
+*     VIRUS_SCAN_PROFILE       = '/SCET/GUI_DOWNLOAD'
+*      IMPORTING
+*     FILELENGTH               =
+    TABLES
+      data_tab                 = gt_text
+*     FIELDNAMES               =
+    EXCEPTIONS
+      file_write_error         = 1
+      no_batch                 = 2
+      gui_refuse_filetransfer  = 3
+      invalid_type             = 4
+      no_authority             = 5
+      unknown_error            = 6
+      header_not_allowed       = 7
+      separator_not_allowed    = 8
+      filesize_not_allowed     = 9
+      header_too_long          = 10
+      dp_error_create          = 11
+      dp_error_send            = 12
+      dp_error_write           = 13
+      unknown_dp_error         = 14
+      access_denied            = 15
+      dp_out_of_memory         = 16
+      disk_full                = 17
+      dp_timeout               = 18
+      file_not_found           = 19
+      dataprovider_exception   = 20
+      control_flush_error      = 21
+      OTHERS                   = 22.
+
+  IF sy-subrc = 0.
+    lv_message = 'Transaction Success'.
+    MESSAGE lv_message TYPE 'S'.
+    MESSAGE s000(zmm) WITH 'Transaction Success'.
+  ENDIF.
+  IF sy-subrc = 1.
+    lv_message = text15 && ' File Write Error'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 2.
+    lv_message = text15 && ' No Batch'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 3.
+    lv_message = text15 && ' GUI Refuse File Transfer'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 4.
+    lv_message = text15 && ' Invalid Type'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 5.
+    lv_message = text15 && ' No Authority'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 6.
+    lv_message = text15 && ' Unknown Error'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 7.
+    lv_message = text15 && ' Header Not Allowed'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 8.
+    lv_message = text15 && ' Separator Not Allowed'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 9.
+    lv_message = text15 && ' File Size Not Allowed'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 10.
+    lv_message = text15 && ' Header Too Long'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 11.
+    lv_message = text15 && ' DP Error Create'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 12.
+    lv_message = text15 && ' DP Error Send'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 13.
+    lv_message = text15 && ' DP Error Write'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 14.
+    lv_message = text15 && ' DP Unknown Create'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 15.
+    lv_message = text15 && ' Access Denied'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 16.
+    lv_message = text15 && ' DP Out Of Memory'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 17.
+    lv_message = text15 && ' Disk Full'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 18.
+    lv_message = text15 && ' DP Timeout'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 19.
+    lv_message = text15 && ' File Not Found'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 20.
+    lv_message = text15 && ' Data Provider Exception'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 21.
+    lv_message = text15 && ' Control Flush Error'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 22.
+    lv_message = text15 && ' Others'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+
+  DATA: filename1  TYPE string,
+        lv_path    TYPE text255,
+        lv_message TYPE string,
+        lv_rc      TYPE c,
+        lv_plant   TYPE c LENGTH 4.
+
+   filename1 = 'http://192.168.0.247/sap/inv_sap/?plant='."AB01&nmfile=
+   CONCATENATE filename1 s_plant-low '&nmfile=' filetitle INTO lv_path.
+
+     CLEAR: lv_message, lv_rc.
+
+  zmmcl_bc_util=>call_php_script(
+    EXPORTING
+      iv_path    = lv_path    " Text, 255 Characters
+    IMPORTING
+      ev_message = lv_message
+      ev_rc      = lv_rc
+  ).
+
+  IF lv_rc IS NOT INITIAL.
+    lv_message = `Failed to call PHP script ` && lv_path.
+    MESSAGE lv_message TYPE 'E'.
+  ELSE.
+    lv_message = `Successfully call PHP script ` && lv_path.
+    MESSAGE lv_message TYPE 'S'.
+    MESSAGE s000(zmm) WITH 'Data has been transfered to sharing folder'.
+  ENDIF.
+
+   ENDFORM.
