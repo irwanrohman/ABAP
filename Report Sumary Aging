@@ -1,0 +1,1014 @@
+REPORT ZFIRP_SUM_AG.
+
+*----------------------------------------------------------------------
+* Confidential and Proprietary
+* PB S4HANA Implementation - SAPPAN
+*----------------------------------------------------------------------
+* RICEFW ID    : -
+* Program Name : ZFIRP_SUM_AG
+* Created on   : 22.06.2021
+* Created by   : PB-FT06 (Irwan)
+* Functional   : Adi Utomo
+* Description  : Summary for Aging based on today's date vs due date
+* Assumption   :
+*
+*----------------------------------------------------------------------
+*
+*  MODIFICATION LOG:
+*
+* 1) Changed on    :
+*    Changed by    :
+*    Transport No. :
+*    Description   :
+*
+*----------------------------------------------------------------------
+
+*----------------------------------------------------------------------*
+* T A B L E S
+*----------------------------------------------------------------------*
+TABLES : BSIK,BSEG,lfa1,kna1,BSID  .
+
+*----------------------------------------------------------------------*
+* T Y P E S
+*----------------------------------------------------------------------*
+TYPE-POOLS : slis.
+types : Begin of ty_report,
+        bukrs     type  bsik-bukrs,
+        gjahr     type  bsik-gjahr,
+        lifnr     TYPE  bsik-lifnr,
+        namev     type  lfa1-name1,
+        kunnr     TYPE  bsid-kunnr,
+        namec     TYPE  kna1-name1,
+        zuonr     TYPE  bsik-zuonr,
+        netdt     TYPE  bseg-netdt,
+        debitus   TYPE  p decimals 2,
+        creditus  TYPE  p DECIMALS 2,
+        ttlusd    TYPE  p DECIMALS 2,
+        dueus1    TYPE  p DECIMALS 2, "Column amount for item due to 30 days
+        dueus2    type  p DECIMALS 2, "Column amount for item due to 60 days
+        dueus3    type  p DECIMALS 2, "Column amount for item due to 90 days
+        dueus6    type  p DECIMALS 2, "Column amount for item due to 180 days
+        dueus12   type  p DECIMALS 2, "Column amount for item due to 360 days
+        dueus24   type  p DECIMALS 2, "Column amount for item due to 720 days
+        dueus25   type  p DECIMALS 2, "Column amount for item due to >720 days
+        sepa      type c,
+        debitid   TYPE  p DECIMALS 2,
+        creditid  TYPE  p DECIMALS 2,
+        ttlidr    TYPE  p DECIMALS 2,
+        dueid1    TYPE  p DECIMALS 2, "Column amount for item due to 30 days
+        dueid2    type  p DECIMALS 2, "Column amount for item due to 60 days
+        dueid3    type  p DECIMALS 2, "Column amount for item due to 90 days
+        dueid6    type  p DECIMALS 2, "Column amount for item due to 180 days
+        dueid12   type  p DECIMALS 2, "Column amount for item due to 360 days
+        dueid24   type  p DECIMALS 2, "Column amount for item due to 720 days
+        dueid25   type  p DECIMALS 2, "Column amount for item due to >720 days
+        xref1     TYPE  bseg-xref1,
+        xref2     type  bseg-xref2,
+        xref3     TYPE  bseg-xref3,
+      end of ty_report,
+
+
+      begin of ty_decre,
+        zuonr   type bseg-zuonr,
+        shkzg   type bseg-shkzg,
+        dmbtr   TYPE decfloat34,
+        dmbe2   TYPE bseg-dmbe2,
+        lifnr   type lfa1-lifnr,
+        kunnr   TYPE kna1-kunnr,
+      end of ty_decre,
+
+      begin of ty_bseg,
+        zuonr        type bseg-zuonr,
+        shkzg        type bseg-shkzg,
+        dmbtr        TYPE bseg-dmbtr,
+        dmbe2        TYPE bseg-dmbe2, "LENGTH 10 DECIMALS 10,
+        NETDT        TYPE bseg-NETDT,
+        due          type p,
+        sydatum      type sy-datum,
+        belnr        TYPE bseg-belnr,
+        xref1        TYPE bseg-xref1,
+        xref2        TYPE bseg-xref2,
+        xref3        TYPE bseg-xref3,
+        lifnr        type lfa1-lifnr,
+        kunnr        TYPE kna1-kunnr,
+        gjahr        TYPE bseg-gjahr,
+
+
+      END OF ty_bseg.
+
+    data : it_report  type STANDARD TABLE OF ty_report,
+           wa_report  type ty_report,
+           it_decre   TYPE STANDARD TABLE OF ty_decre WITH HEADER LINE,
+           wa_decre   TYPE ty_decre,
+           it_main    type STANDARD TABLE OF bsik WITH HEADER LINE,
+           it_bsik    type STANDARD TABLE OF bsik WITH HEADER LINE,
+           it_bseg    TYPE STANDARD TABLE OF ty_bseg WITH HEADER LINE,
+           it_Hvend   TYPE STANDARD TABLE OF ty_bseg WITH HEADER LINE,
+           it_svend   TYPE STANDARD TABLE OF ty_bseg WITH HEADER LINE,
+           it_bsid    TYPE STANDARD TABLE OF bsid WITH HEADER LINE,
+           it_hcust   type STANDARD TABLE OF ty_bseg WITH HEADER LINE,
+           it_scust   TYPE STANDARD TABLE OF ty_bseg WITH HEADER LINE,
+           it_main2   TYPE STANDARD TABLE OF bsid WITH HEADER LINE,
+
+
+*STANDARD LAYOUT OF SAP
+           gw_layout       TYPE slis_layout_alv,
+           gt_cat          TYPE slis_t_fieldcat_alv,
+           gw_cat          TYPE slis_fieldcat_alv,
+           gt_event        TYPE slis_t_event,
+           gw_event        TYPE slis_alv_event,
+           gt_sort         TYPE slis_t_sortinfo_alv,
+           gw_sort         TYPE slis_sortinfo_alv.
+
+
+ SELECTION-SCREEN BEGIN OF BLOCK a WITH FRAME TITLE TEXT-001.
+PARAMETERS :
+  p_rad1 RADIOBUTTON GROUP rad user-command sc DEFAULT 'X',   " Summary Aging AP"
+  p_rad2 RADIOBUTTON GROUP rad.               " Summary Aging AR"
+SELECTION-SCREEN END OF BLOCK a.
+
+
+SELECTION-SCREEN BEGIN OF BLOCK b WITH FRAME TITLE TEXT-002.
+SELECT-OPTIONS:
+     s_bukrs FOR BSID-BUKRS OBLIGATORY ,
+     s_lifnr FOR BSIK-LIFNR MODIF ID sc2,   "Vendor
+     s_kunnr FOR BSID-KUNNR MODIF ID sc1,   "Customer
+     s_zuonr for BSIK-ZUONR .
+
+SELECTION-SCREEN END OF BLOCK b.
+
+
+SELECTION-SCREEN BEGIN OF BLOCK d WITH FRAME TITLE TEXT-003.
+PARAMETERs:
+ c_cek1    AS CHECKBOX DEFAULT 'X', "Normal Items
+ c_cek2    AS CHECKBOX DEFAULT ' '. "Sp. G/L Transaction
+SELECTION-SCREEN END   OF BLOCK d.
+
+AT SELECTION-SCREEN OUTPUT.
+PERFORM scmodify.
+
+
+
+START-OF-SELECTION.
+if c_cek1 eq ' ' and c_cek2 eq ' '.
+  message  i000(zmm)  WITH  'Please Choose at least One Check Box'.
+else.
+if p_rad1 eq 'X'.
+  perform get_data1.
+ perform Display_data1.
+else.
+  perform get_data2.
+  perform Display_data2.
+  endif.
+
+ endif.
+
+
+  form get_data1.
+
+   field-SYMBOLS :
+                  <fs1> type TY_BSEG,
+                  <fs2> type TY_bseg,
+                  <fs3> type ty_report,
+                  <fs4> TYPE ty_bseg,
+                  <fs5> TYPE ty_bseg.
+
+    select * from bsik into table it_bsik
+      where zuonr in s_zuonr
+      and lifnr in s_lifnr
+      and bukrs in s_bukrs.
+
+ if c_cek2 eq 'X' and c_cek1 eq 'X'.
+      it_bsid[] = it_bsid[].
+   elseif c_cek1 eq 'X'."Normal Items
+     delete it_bsik where umskz ne ' '.
+   elseif c_cek2 eq 'X'."Sp. G/L Transaction
+       delete it_bsik where umskz eq ' '.
+     endif.
+
+if it_bsik[] is not INITIAL.
+     select * from bseg into CORRESPONDING FIELDS OF table it_bseg
+       FOR ALL ENTRIES IN it_bsik
+       where zuonr = it_bsik-zuonr
+       and   bukrs = it_bsik-bukrs
+       and   gjahr = it_bsik-gjahr
+      and   belnr = it_bsik-belnr.
+else.
+  message s000(zmm) with 'Data Not Found'.
+endif.
+
+loop at it_bseg ASSIGNING <fs4>.
+
+  if <fs4>-SHKZG eq 'H'.
+    append <fs4> to  it_hvend.
+  else.
+    append <fs4> to it_svend.
+    endif.
+
+    read table it_bsik with key belnr = <fs4>-belnr gjahr = <fs4>-gjahr.
+    if sy-subrc eq 0.
+      <fs4>-lifnr = it_bsik-lifnr.
+    endif.
+
+    endloop.
+
+
+
+loop at it_hvend ASSIGNING <fs5>.
+
+  <fs5>-due     = sy-datum - <fs5>-netdt.
+  read table it_svend ASSIGNING <FS1> with key zuonr = <fs5>-zuonr belnr = <fs5>-belnr."into wa_svend
+    if sy-subrc eq 0.
+  <FS1>-DUE = <fs5>-DUE.
+      endif.
+   read table it_bsik with key zuonr = <fs5>-zuonr belnr = <fs5>-belnr.
+   if sy-subrc eq 0.
+     <fs5>-lifnr = it_bsik-lifnr.
+
+     endif.
+*  modify it_hvend.
+  endloop.
+
+move it_bsik[] to it_main[].
+sort it_main by zuonr lifnr.
+delete ADJACENT DUPLICATES FROM it_main COMPARING zuonr lifnr.
+
+sort it_hvend by zuonr netdt ASCENDING. " Sort to get the first NETDT
+delete it_hvend where netdt eq ' '.
+
+
+  loop at it_bsik. " For collecting per Debit Credit
+  wa_decre-zuonr = it_bsik-zuonr.
+  wa_decre-shkzg = it_bsik-shkzg.
+  wa_decre-dmbtr = it_bsik-dmbtr * 100.
+  wa_decre-dmbe2 = it_bsik-dmbe2 .
+  wa_decre-lifnr = it_bsik-lifnr.
+  collect wa_decre into it_decre.
+  endloop.
+
+
+loop at it_main.
+
+
+    wa_report-zuonr = it_main-zuonr.
+  read table it_bsik  with key zuonr = it_main-zuonr lifnr = it_main-lifnr.
+  if sy-subrc eq 0.
+    wa_report-bukrs = it_bsik-bukrs.
+    wa_report-lifnr = it_bsik-lifnr.
+    endif.
+
+  select single name1 from lfa1
+    into wa_report-namev
+    where lifnr = it_bsik-lifnr.
+
+ read TABLE it_hvend with key zuonr = it_bsik-zuonr lifnr = it_main-lifnr.
+ if sy-subrc eq 0.
+   wa_report-netdt = it_hvend-netdt.
+   wa_report-xref1 = it_hvend-xref1.
+   wa_report-xref2 = it_hvend-xref2.
+   wa_report-xref3 = it_hvend-xref3.
+ endif.
+
+ read table it_bsik with key zuonr = it_main-zuonr belnr = it_hvend-belnr.
+ if sy-subrc eq 0.
+     wa_report-gjahr = it_bsik-gjahr.
+   elseif wa_report-gjahr eq ' '.
+    wa_report-gjahr = it_bsik-gjahr.
+  endif.
+
+
+ read TABLE it_decre with key zuonr = it_main-zuonr shkzg = 'S' lifnr = it_main-lifnr.
+ if sy-subrc eq 0.
+     wa_report-debitus = it_decre-dmbe2.
+     wa_report-debitid  = it_decre-dmbtr.
+   endif.
+
+  read TABLE it_decre with key zuonr = it_main-zuonr shkzg = 'H' lifnr = it_main-lifnr.
+ if sy-subrc eq 0.
+      wa_report-creditus = it_decre-dmbe2.
+      wa_report-creditid  = it_decre-dmbtr.
+   endif.
+ wa_report-ttlusd =  wa_report-debitus - wa_report-creditus.
+ wa_report-ttlidr =  wa_report-debitid - wa_report-creditid.
+
+
+*  loop at it_hvdue where zuonr = it_main-zuonr.
+
+    if it_hvend-due LE 30.
+      wa_report-dueus1 = wa_report-ttlusd.
+      wa_report-dueid1 = wa_report-ttlidr.
+    elseif it_hvend-due BETWEEN 31 and 60.
+      wa_report-dueus2 = wa_report-ttlusd.
+      wa_report-dueid2 = wa_report-ttlidr.
+    elseif it_hvend-due BETWEEN 61 and 90.
+      wa_report-dueus3 = wa_report-ttlusd.
+      wa_report-dueid3 = wa_report-ttlidr.
+    elseif it_hvend-due BETWEEN 91 and 180.
+      wa_report-dueus6 = wa_report-ttlusd.
+      wa_report-dueid6 = wa_report-ttlidr.
+     elseif it_hvend-due BETWEEN 181 and 360.
+      wa_report-dueus12 = wa_report-ttlusd.
+      wa_report-dueid12 = wa_report-ttlidr.
+    elseif it_hvend-due BETWEEN 361 and 720.
+      wa_report-dueus24 = wa_report-ttlusd.
+      wa_report-dueid24 = wa_report-ttlidr.
+     elseif it_hvend-due GE 721.
+      wa_report-dueus25 = wa_report-ttlusd.
+      wa_report-dueid25 = wa_report-ttlidr.
+    endif.
+*    endloop.
+
+
+ append wa_report to it_report.
+clear wa_report.
+  endloop.
+
+
+    endform.
+
+  form get_data2.
+
+   field-SYMBOLS :
+                  <fs1> type TY_BSEG,
+                  <fs2> type TY_bseg,
+                  <fs3> type bseg,
+                  <fs4> TYPE ty_bseg,
+                  <fs5> TYPE ty_bseg.
+
+
+    select * from bsid into table it_bsid
+      where zuonr in s_zuonr
+      and kunnr in s_kunnr
+      and bukrs in s_bukrs.
+
+ if c_cek2 eq 'X' and c_cek1 eq 'X'.
+      it_bsid[] = it_bsid[].
+   elseif c_cek2 eq 'X'."Sp. G/L Transaction
+    delete it_bsid where umskz eq ' '.
+   elseif c_cek1 eq 'X'."Normal Items
+     DELETE IT_BSID where umskz ne ' '.
+     endif.
+
+if it_bsid[] is not INITIAL.
+     select * from bseg into CORRESPONDING FIELDS OF table it_bseg
+       FOR ALL ENTRIES IN it_bsid
+       where zuonr = it_bsid-zuonr
+       and   bukrs = it_bsid-bukrs
+       and   gjahr = it_bsid-gjahr
+       and   belnr = it_bsid-belnr.
+else.
+   message s000(zmm) with 'Data Not Found'.
+   endif.
+
+loop at it_bseg ASSIGNING <fs4>.
+  if <fs4>-SHKZG eq 'H'.
+    append <fs4> to  it_hcust.
+  else.
+    append <fs4> to it_scust.
+    endif.
+
+    read table it_bsid with key belnr = <fs4>-belnr gjahr = <fs4>-gjahr.
+    if sy-subrc eq 0.
+      <fs4>-kunnr = it_bsid-kunnr.
+
+      endif.
+
+    endloop.
+
+loop at it_scust ASSIGNING <fs5>.
+  <fs5>-due     = sy-datum - <fs5>-netdt.
+  read table it_hcust ASSIGNING <FS1> with key zuonr = <fs5>-zuonr belnr = <fs5>-belnr."into wa_svend
+    if sy-subrc eq 0.
+  <FS1>-DUE = <fs5>-DUE.
+      endif.
+
+     read table it_bsid with key zuonr = <fs5>-zuonr belnr = <fs5>-belnr.
+   if sy-subrc eq 0.
+     <fs5>-kunnr = it_bsid-kunnr.
+     endif.
+*  modify it_scust.
+  endloop.
+
+move it_bsid[] to it_main2[].
+sort it_main2 by zuonr kunnr.
+delete ADJACENT DUPLICATES FROM it_main2 COMPARING zuonr kunnr.
+
+sort it_scust by zuonr netdt ASCENDING. " Sort to get the first NETDT
+delete it_scust where netdt eq ' '.
+
+*
+loop at it_bsid. " For collecting per Debit Credit
+  wa_decre-zuonr = it_bsid-zuonr.
+  wa_decre-shkzg = it_bsid-shkzg.
+  wa_decre-dmbtr = it_bsid-dmbtr * 100.
+  wa_decre-dmbe2 = it_bsid-dmbe2 .
+  wa_decre-kunnr  = it_bsid-kunnr.
+  collect wa_decre into it_decre.
+  endloop.
+
+loop at it_main2.
+
+
+    wa_report-zuonr = it_main2-zuonr.
+  read table it_bsid  with key zuonr = it_main2-zuonr kunnr = it_main2-kunnr.
+  if sy-subrc eq 0.
+    wa_report-bukrs = it_bsid-bukrs.
+    wa_report-kunnr = it_bsid-kunnr.
+    endif.
+
+  select single name1 from kna1
+    into wa_report-namec
+    where kunnr = it_bsid-kunnr.
+
+ read TABLE it_scust with key zuonr = it_bsid-zuonr kunnr = it_main2-kunnr.
+ if sy-subrc eq 0.
+   wa_report-netdt = it_scust-netdt.
+   wa_report-xref1 = it_scust-xref1.
+   wa_report-xref2 = it_scust-xref2.
+   wa_report-xref3 = it_scust-xref3.
+ endif.
+
+ read TABLE it_decre with key zuonr = it_main2-zuonr shkzg = 'S' kunnr = it_main2-kunnr.
+ if sy-subrc eq 0.
+     wa_report-debitus = it_decre-dmbe2.
+     wa_report-debitid  = it_decre-dmbtr.
+   endif.
+
+read table it_bsid with key zuonr = it_main2-zuonr belnr = it_scust-belnr.
+if sy-subrc eq 0.
+     wa_report-gjahr = it_bsid-gjahr.
+  elseif wa_report-gjahr eq ' '.
+    wa_report-gjahr = it_bsid-gjahr.
+  endif.
+
+  read TABLE it_decre with key zuonr = it_main2-zuonr shkzg = 'H' kunnr = it_main2-kunnr.
+ if sy-subrc eq 0.
+      wa_report-creditus = it_decre-dmbe2.
+      wa_report-creditid  = it_decre-dmbtr.
+   endif.
+ wa_report-ttlusd =   wa_report-debitus - wa_report-creditus.
+ wa_report-ttlidr =   wa_report-debitid - wa_report-creditid.
+
+
+*  loop at it_hvdue where zuonr = it_main-zuonr.
+
+    if it_scust-due LE 30.
+      wa_report-dueus1 = wa_report-ttlusd.
+      wa_report-dueid1 = wa_report-ttlidr.
+    elseif it_scust-due BETWEEN 31 and 60.
+      wa_report-dueus2 = wa_report-ttlusd.
+      wa_report-dueid2 = wa_report-ttlidr.
+    elseif it_scust-due BETWEEN 61 and 90.
+      wa_report-dueus3 = wa_report-ttlusd.
+      wa_report-dueid3 = wa_report-ttlidr.
+    elseif it_scust-due BETWEEN 91 and 180.
+      wa_report-dueus6 = wa_report-ttlusd.
+      wa_report-dueid6 = wa_report-ttlidr.
+     elseif it_scust-due BETWEEN 181 and 360.
+      wa_report-dueus12 = wa_report-ttlusd.
+      wa_report-dueid12 = wa_report-ttlidr.
+    elseif it_scust-due BETWEEN 361 and 720.
+      wa_report-dueus24 = wa_report-ttlusd.
+      wa_report-dueid24 = wa_report-ttlidr.
+     elseif it_scust-due GE 721.
+      wa_report-dueus25 = wa_report-ttlusd.
+      wa_report-dueid25 = wa_report-ttlidr.
+    endif.
+*    endloop.
+
+
+ append wa_report to it_report.
+clear wa_report.
+  endloop.
+
+    endform.
+
+  form scmodify.
+    LOOP AT SCREEN.
+  IF SCREEN-GROUP1 = 'SC1' AND P_rad1 EQ 'X'.
+    SCREEN-ACTIVE = '0'.
+    MODIFY SCREEN.
+    CONTINUE.
+  ELSEIF SCREEN-GROUP1 = 'SC2' AND p_rad2 EQ 'X'.
+    SCREEN-ACTIVE = '0'.
+    MODIFY SCREEN.
+    CONTINUE.
+  ENDIF.
+ENDLOOP.
+
+
+    endform.
+
+FORM display_data1.
+
+  PERFORM fill_fieldcat.
+  gw_layout-zebra = 'X'.
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program = sy-repid
+      is_layout          = gw_layout
+      it_fieldcat        = gt_cat
+      i_default          = ''
+      i_save             = 'X'
+    TABLES
+      t_outtab           = IT_REPORT.
+
+  IF sy-subrc <> 0.
+  ENDIF.
+
+
+
+ENDFORM.
+
+
+
+ FORM fill_fieldcat.
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BUKRS'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 8.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Co.Code'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'GJAHR'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Fisc.Year'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'LIFNR'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Vend.No'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'NAMEV'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 30.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Nama Vendor'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZUONR'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Invoice Number'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'NETDT'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Due Date'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DEBITUS'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 13.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Debit'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'CREDITUS'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 13.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Credit'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'TTLUSD'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 13.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Tot. USD'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEUS1'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '<1 Month'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEUS2'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '1s.d 2 Months'.
+  APPEND gw_cat TO gt_cat.
+
+    CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEUS3'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '2s.d 3 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEUS6'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '3s.d 6 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEUS12'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '6s.d 12 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEUS24'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '12s.d 24 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEUS25'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '>24 Months'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'SEPA'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'USD<----->IDR'.
+  gw_cat-emphasize = 'C600'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DEBITID'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 13.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Debit IDR'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'CREDITID'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 13.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Credit IDR'.
+  APPEND gw_cat TO gt_cat.
+
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'TTLIDR'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 13.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Total IDR'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEID1'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '<1 Month'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEID2'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '1s.d 2 Months'.
+  APPEND gw_cat TO gt_cat.
+
+    CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEID3'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '2s.d 3 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEID6'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '3s.d 6 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEID12'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '6s.d 12 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEID24'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '12s.d 24 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEID25'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '>24 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'XREF1'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 25.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Reference 1'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'XREF2'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 25.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Reference 2'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'XREF3'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 25.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Reference 3'.
+  APPEND gw_cat TO gt_cat.
+
+
+  endform.
+
+
+
+FORM display_data2.
+  PERFORM fill_fieldcat2.
+  gw_layout-zebra = 'X'.
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program = sy-repid
+      is_layout          = gw_layout
+      it_fieldcat        = gt_cat
+      i_default          = ''
+      i_save             = 'X'
+    TABLES
+      t_outtab           = IT_REPORT.
+
+  IF sy-subrc <> 0.
+  ENDIF.
+
+ENDFORM.
+
+
+ FORM fill_fieldcat2.
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BUKRS'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 8.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Co.Code'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'GJAHR'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Fisc.Year'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'KUNNR'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Cust.No'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'NAMEC'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 30.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Nama Customer'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZUONR'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Invoice Number'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'NETDT'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Due Date'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DEBITUS'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 13.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Debit'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'CREDITUS'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 13.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Credit'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'TTLUSD'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 13.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Tot. USD'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEUS1'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '<1 Month'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEUS2'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '1s.d 2 Months'.
+  APPEND gw_cat TO gt_cat.
+
+    CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEUS3'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '2s.d 3 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEUS6'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '3s.d 6 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEUS12'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '6s.d 12 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEUS24'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '12s.d 24 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEUS25'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '>24 Months'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'SEPA'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'USD<----->IDR'.
+  gw_cat-emphasize = 'C600'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DEBITID'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 13.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Debit IDR'.
+  APPEND gw_cat TO gt_cat.
+
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'CREDITID'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 13.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Credit IDR'.
+  APPEND gw_cat TO gt_cat.
+
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'TTLIDR'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 13.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Total IDR'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEID1'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '<1 Month'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEID2'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '1s.d 2 Months'.
+  APPEND gw_cat TO gt_cat.
+
+    CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEID3'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '2s.d 3 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEID6'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '3s.d 6 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEID12'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '6s.d 12 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEID24'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '12s.d 24 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DUEID25'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = '>24 Months'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'XREF1'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 25.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Reference 1'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'XREF2'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 25.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Reference 2'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'XREF3'.
+  gw_cat-tabname = 'IT_REPORT'.
+  gw_cat-outputlen = 25.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'Reference 3'.
+  APPEND gw_cat TO gt_cat.
+
+
+  endform.
