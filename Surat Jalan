@@ -1,0 +1,681 @@
+*----------------------------------------------------------------------
+* Confidential and Proprietary
+* PB S4HANA Implementation - AUDI PRIMA
+*----------------------------------------------------------------------
+* RICEFW ID    : SD-F002
+* Program Name : ZSDF_SURAT_JALAN
+* Created on   : 29.07.2021
+* Created by   : KU-SD01 (Irwan Rohman)
+* Functional   : Fitri / Kenang
+* Description  : Surat Jalan will be called from VT02N
+* Assumption   :
+
+*----------------------------------------------------------------------
+*
+*  MODIFICATION LOG:
+*
+* 1) Changed on    : 29.07.2021
+*    Changed by    : KU-SD01 (Irwan Rohman)
+*    Transport No. : PSDK901814
+*    Description   : Initial Version
+*
+REPORT zsdf_surat_jalan.
+
+
+
+SET EXTENDED CHECK OFF.
+TABLES: vbpla, thead, ttxern, ttxit, t005, vbddl, stxh, sadr.   "SADR40A
+INCLUDE vttkdata.                      "Shipment Header
+INCLUDE vttsdata.                      "Shipment Segment
+INCLUDE vttpdata.                      "Shipment Items
+INCLUDE vbpadata.                      "Partner
+INCLUDE vtfadata.                      "Flow
+INCLUDE sadrdata.                      "Address
+INCLUDE vtlfdata.                      "Delivery Selection
+INCLUDE rvadtabl.                      "Messages
+INCLUDE vsedata.                       "shipping units
+INCLUDE rv56acom.                      "I/O-Structure
+SET EXTENDED CHECK ON.
+
+DATA:
+  xscreen(1)              TYPE c,
+  retcode                 LIKE sy-subrc VALUE 0,
+  there_was_output(1)     TYPE c        VALUE space,
+  new_page_was_ordered(1) TYPE c        VALUE space.
+
+CONSTANTS:
+  no(1)  VALUE space,
+  yes(1) VALUE 'X'.
+
+TABLES : tpar .
+
+TYPE-POOLS:
+nast.
+
+TYPES:
+  BEGIN OF gty_surat_jalan_data,
+    head TYPE zsdst_sj_head,
+    item TYPE zsdtt_sj_item,
+  END OF gty_surat_jalan_data,
+
+  gtt_surat_jalan_data TYPE STANDARD TABLE OF gty_surat_jalan_data.
+
+*----------------------------------------------------------------------*
+* S T A R T  O F  S E L E C T I O N  S C R E E N  (FOR TESTING ONLY)
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*SELECTION-SCREEN BEGIN OF BLOCK a WITH FRAME TITLE TEXT-002.
+*  SELECT-OPTIONS:
+*       s_tknum FOR vttk-tknum OBLIGATORY.
+*
+*
+*SELECTION-SCREEN END OF BLOCK a.
+*
+*START-OF-SELECTION.
+
+
+*  PERFORM entry.
+
+
+*----------------------------------------------------------------------*
+* S U B - R O U T I N E S
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+
+
+FORM entry USING return_code LIKE sy-subrc                  "#EC CALLED
+                 us_screen   TYPE c.                        "#EC CALLED
+
+  DATA:
+    lt_surat_jalan_data TYPE gtt_surat_jalan_data,
+    uv_tknum            TYPE tknum,
+    gs_nast             TYPE nast.
+
+  return_code = 1.
+
+  uv_tknum = nast-objky.
+
+*  uv_tknum = s_tknum-low.
+
+  PERFORM f_get_data USING uv_tknum
+        CHANGING lt_surat_jalan_data.
+  IF lt_surat_jalan_data IS NOT INITIAL.
+    PERFORM f_print USING lt_surat_jalan_data.
+  ENDIF.
+
+  return_code = 0.
+
+
+ENDFORM.
+
+
+
+
+FORM f_get_data USING uv_tknum TYPE vttk-tknum
+      CHANGING ct_surat_jalan_data TYPE gtt_surat_jalan_data.
+
+  "Local data declaration
+
+  TYPES :
+    BEGIN OF lty_item_int,
+      style     TYPE stdpd,
+      so_number TYPE vbeln,
+      po        TYPE bstkd,
+      qty_pcs   TYPE p,
+      qty_ctn   TYPE p,
+      vbeln     TYPE vbeln,
+    END OF lty_item_int.
+
+  DATA :
+    ls_surat_jalan_data TYPE gty_surat_jalan_data,
+    ls_header           TYPE zsdst_sj_head,
+    lt_item             TYPE zsdtt_sj_item,
+    ls_item             TYPE zsdst_sj_item,
+    lt_item_int         TYPE STANDARD TABLE OF lty_item_int,
+    ls_item_int         TYPE lty_item_int,
+    lv_qty_pcs_tot      TYPE p,
+    lv_qty_ctn_tot      TYPE p,
+    lv_sign1            TYPE c LENGTH 15,
+    lv_sign2            TYPE c LENGTH 15,
+    lv_datum            TYPE sy-datum,
+    lv_uzeit            TYPE sy-uzeit,
+    lv_Point            TYPE c LENGTH 15,
+    lv_logo             TYPE xstring.
+
+* C O N S T A N T
+  lv_datum = sy-datum.
+  lv_uzeit = sy-uzeit.
+
+* C A L L I N G   M E T H O D  T O  G E T  L O G O
+
+  SELECT SINGLE * FROM zxxtb_comp_logo
+    INTO @DATA(ls_comp_logo)
+  WHERE bukrs = 'AD00'. " perlu diupdate
+  IF sy-subrc EQ 0.
+    cl_ssf_xsf_utilities=>get_bds_graphic_as_bmp(
+      EXPORTING
+        p_object       = 'GRAPHICS'                 " SAPscript Graphics Management: Application object
+        p_name         = ls_comp_logo-logo1                 " Name
+        p_id           = 'BMAP'                 " SAPscript Graphics Management: ID
+        p_btype        = 'BCOL'                 " SAPscript: Type of graphic
+      RECEIVING
+        p_bmp          =  lv_logo                " Graphic Data
+      EXCEPTIONS
+        not_found      = 1                " Graphic Not Found
+        internal_error = 2                " Internal error
+        OTHERS         = 3
+    ).
+    IF sy-subrc <> 0.
+      CLEAR Lv_logo.
+    ENDIF.
+  ENDIF.
+
+
+
+* G E T T I N G  D A T A
+
+  SELECT k~tknum,k~tdlnr, p~tpnum,p~vbeln,l~vstel
+    FROM vttk AS k
+    LEFT OUTER JOIN vttp AS p
+    ON p~tknum = k~tknum
+    LEFT OUTER JOIN likp AS l
+    ON l~vbeln = p~vbeln
+    WHERE k~tknum = @uv_tknum
+  INTO TABLE @DATA(LT_shipment).
+
+
+  SELECT l~kunnr,l~vbeln,k~land1, t~landx, t~spras
+    FROM likp AS l
+    INNER JOIN kna1 AS k
+    ON l~kunnr = k~kunnr
+    INNER JOIN t005t AS t
+    ON t~land1 = k~land1
+    FOR ALL ENTRIES IN @lt_shipment
+    WHERE l~vbeln = @lt_shipment-vbeln
+    AND t~spras EQ 'E'
+  INTO TABLE @DATA(lt_destination).
+
+  SELECT l~kunag,l~lifex,l~wadat_ist, l~lfart, l~vbeln,k~vkgrp, t~bezei
+    FROM likp AS l
+    INNER JOIN knvv AS k
+    ON l~kunag = k~kunnr
+    INNER JOIN tvgrt AS t
+    ON k~vkgrp = t~vkgrp
+    FOR ALL ENTRIES IN @lt_shipment
+    WHERE l~vbeln = @lt_shipment-vbeln
+    AND t~spras EQ 'E'
+  INTO TABLE @DATA(lt_buyer).
+
+  SELECT name1,kunnr FROM kna1
+    FOR ALL ENTRIES IN @lt_buyer
+    WHERE kunnr = @lt_buyer-kunag
+  INTO TABLE @DATA(lt_customer).
+
+  SELECT name1 FROM lfa1
+    FOR ALL ENTRIES IN @lt_shipment
+    WHERE lifnr = @lt_shipment-tdlnr
+  INTO TABLE @DATA(lt_vendor).
+
+  SELECT k~vbeln,k~fkdat,k~fksto, k~fkart, p~vgbel, p~vbelv
+    FROM vbrk AS k
+    INNER JOIN vbrp AS p
+    ON k~vbeln = p~vbeln
+    FOR ALL ENTRIES IN @lt_shipment
+    WHERE vgbel = @lt_shipment-vbeln
+    AND k~fksto EQ ' '
+    AND k~fkart EQ 'BLAP'
+  INTO TABLE @DATA(lt_invoice).
+
+  SELECT * FROM zsdtb_signature INTO TABLE @DATA(lt_sign).
+
+
+  SORT lt_invoice ASCENDING BY  vbeln vgbel fkdat.
+  DELETE ADJACENT DUPLICATES FROM lt_invoice COMPARING vbeln vgbel fkdat.
+
+
+  READ TABLE lt_shipment INTO DATA(ls_shipment) INDEX 1.
+  IF sy-subrc EQ 0.
+    SELECT SINGLE adrnr FROM tvst WHERE vstel = @ls_shipment-vstel
+    INTO @DATA(lv_comp_adrnr).
+    IF sy-subrc EQ 0.
+
+      zxxcl_address_util=>get_address(
+      EXPORTING
+         iv_adrnr          = lv_comp_adrnr   " Address
+      IMPORTING
+         ev_name            = DATA(lv_name)
+         ev_address_full    = DATA(lt_address)
+         ev_telno           = DATA(lv_telno)
+         ev_faxno           = DATA(lv_faxno)
+                        ).
+    ENDIF.
+    IF ls_shipment-vstel EQ 'AD01'.
+      lv_point = 'Boyolali,'.
+    ENDIF.
+  ENDIF.
+
+
+  SELECT * FROM zsdtb_act_ship_d INTO TABLE @DATA(lt_ship_d)
+  WHERE tknum = @uv_tknum AND status ='ESTIMATE'.
+
+  DATA(lt_sj) = lt_ship_d.
+  SORT lt_sj BY vbeln container_id.
+  DELETE ADJACENT DUPLICATES FROM lt_sj COMPARING vbeln container_id.
+
+  SELECT * FROM zsdtb_act_ship INTO TABLE @DATA(lt_ship)
+  WHERE tknum = @uv_tknum AND status ='ESTIMATE'.
+*
+*  IF lt_ship  IS INITIAL OR lt_ship_d IS INITIAL.
+*    MESSAGE 'Container Planning Data is Not Maintained Yet' TYPE 'S' DISPLAY LIKE 'E'.
+*    RETURN.
+*  ENDIF.
+*
+
+   IF lt_ship  IS INITIAL OR lt_ship_d IS INITIAL.
+    perform protocol_update.
+
+    RETCODE = 1.
+  ENDIF.
+
+  SORT lt_ship BY container_id.
+  SORT lt_ship_d BY vbeln container_id.
+
+  SELECT vbeln, bstkd FROM vbkd INTO TABLE @DATA(lt_so)
+                FOR ALL ENTRIES IN @lt_ship_d
+  WHERE bstkd = @lt_ship_d-bstkd.
+
+  SORT lt_so ASCENDING BY bstkd vbeln.
+  DELETE ADJACENT DUPLICATES FROM lt_so COMPARING bstkd vbeln.
+
+
+
+*  D A T A  F I L L I N G
+
+  LOOP AT lt_sj INTO DATA(ls_sj).
+    CLEAR: ls_surat_jalan_data, lt_item_int, lt_item, lv_qty_pcs_tot, lv_qty_ctn_tot.
+
+    LOOP AT lt_ship_d INTO DATA(ls_ship_d) WHERE vbeln = ls_sj-vbeln AND container_id = ls_sj-container_id.
+
+      READ TABLE lt_so INTO DATA(ls_so) WITH KEY bstkd = ls_ship_d-bstkd.
+      IF sy-subrc EQ 0.
+        ls_item_int-so_number      = ls_so-vbeln.
+      ENDIF.
+
+      ls_item_int-vbeln            = ls_ship_d-vbeln.
+      ls_item_int-style            = ls_ship_d-style.
+      ls_item_int-po               = ls_ship_d-bstkd.
+      ls_item_int-qty_pcs          = ls_ship_d-tot_pcs.
+      ls_item_int-qty_ctn          = ls_ship_d-tot_ctn_qty.
+      COLLECT ls_item_int INTO lt_item_int.
+
+      lv_qty_pcs_tot = lv_qty_pcs_tot + ls_ship_d-tot_pcs.
+      lv_qty_ctn_tot = lv_qty_ctn_tot + ls_ship_d-tot_ctn_qty.
+
+      WRITE ls_item_int-style TO ls_item-style.
+      SHIFT ls_item-style LEFT DELETING LEADING space.
+
+      WRITE ls_item_int-po TO ls_item-po.
+      SHIFT ls_item-po LEFT DELETING LEADING space.
+
+      WRITE ls_item_int-so_number TO ls_item-so_number.
+      SHIFT ls_item-so_number LEFT DELETING LEADING space.
+
+      WRITE ls_item_int-qty_pcs TO ls_item-qty_pcs.
+      SHIFT ls_item-qty_pcs LEFT DELETING LEADING space.
+
+      WRITE ls_item_int-qty_ctn TO ls_item-qty_ctn.
+      SHIFT ls_item-qty_ctn LEFT DELETING LEADING space.
+
+
+      APPEND ls_item TO ls_surat_jalan_data-item.
+
+    ENDLOOP.
+
+
+*   G E T T I N G  S H I P M E N T  D A T A
+
+    READ TABLE lt_ship INTO DATA(ls_ship) WITH KEY container_id = ls_sj-container_id.
+
+    ls_surat_jalan_data-head = ls_header.
+    ls_surat_jalan_data-head-logo = lv_logo.
+
+    "Point
+    ls_surat_jalan_data-head-loading_point = lv_point.
+
+    "Receiver
+    READ TABLE lt_vendor INTO DATA(ls_vendor) INDEX 1.
+    ls_surat_jalan_data-head-fwd_name = ls_vendor-name1.
+
+    "Header
+    WRITE lv_name TO ls_surat_jalan_data-head-company_name1.
+    SHIFT ls_surat_jalan_data-head-company_name1 LEFT DELETING LEADING space.
+
+    "Printed on
+    ls_surat_jalan_data-head-datum = lv_datum.
+    ls_surat_jalan_data-head-uzeit = lv_uzeit.
+
+
+
+*   G E T T I N G  D E L I V E R Y  D A T A
+
+    "Warehouse   "SJ Number    "Buyer      "Sign
+    READ TABLE lt_buyer INTO DATA(ls_buyer) WITH KEY vbeln = ls_sj-vbeln.
+    IF sy-subrc EQ 0.
+      ls_surat_jalan_data-head-sj_no = ls_buyer-vbeln.
+      ls_surat_jalan_data-head-sj_date = ls_buyer-wadat_ist.
+      ls_surat_jalan_data-head-warehouse_name = ls_buyer-lifex.
+      ls_surat_jalan_data-head-buyer_name = ls_buyer-bezei.
+      IF ls_buyer-bezei = 'Common'.
+        READ TABLE lt_customer INTO DATA(ls_customer) WITH KEY kunnr = ls_buyer-kunag.
+        IF sy-subrc EQ 0.
+          ls_surat_jalan_data-head-buyer_name = ls_customer-name1.
+        ENDIF.
+      ENDIF.
+
+      IF ls_buyer-lfart EQ 'DLAC' OR ls_buyer-lfart EQ 'DLSM'.
+        READ TABLE lt_sign INTO DATA(ls_sign) WITH KEY position_sig = 'PIMPINAN'.
+        IF sy-subrc EQ 0.
+          WRITE ls_sign-name_person TO lv_sign1.
+          SHIFT ls_sign-name_person LEFT DELETING LEADING space.
+          ls_surat_jalan_data-head-pimpinan = ' ( '&& lv_sign1 && ' )'.
+        ENDIF.
+
+        READ TABLE lt_sign INTO DATA(ls_sign2) WITH KEY position_sig = 'KEPALA GUDANG'.
+        IF sy-subrc EQ 0.
+          WRITE ls_sign2-name_person TO lv_sign2.
+          SHIFT ls_sign2-name_person LEFT DELETING LEADING space.
+          ls_surat_jalan_data-head-kepala_gudang = '         ( '&& lv_sign2 && ' )'.
+        ENDIF.
+
+      ELSE.
+        ls_surat_jalan_data-head-pimpinan = '(..........................)'.
+        ls_surat_jalan_data-head-kepala_gudang = '   (..........................)'.
+      ENDIF.
+
+    ENDIF.
+
+
+    "Destination
+    READ TABLE lt_destination INTO DATA(ls_destination) WITH KEY vbeln = ls_sj-vbeln.
+    IF sy-subrc EQ 0.
+      ls_surat_jalan_data-head-dest_country = ls_destination-landx.
+    ENDIF.
+
+    "Invoice
+    READ TABLE lt_invoice INTO DATA(ls_invoice) WITH KEY vgbel = ls_sj-vbeln.
+    IF sy-subrc EQ 0.
+      ls_surat_jalan_data-head-invoice_no = ls_invoice-vbeln.
+    ENDIF.
+
+    "kendaraan
+    ls_surat_jalan_data-head-truck_no = ls_ship-truck_plate_no.
+
+    "total qty ctn
+    WRITE lv_qty_ctn_tot TO ls_surat_jalan_data-head-tot_ctn.
+    SHIFT ls_surat_jalan_data-head-tot_ctn LEFT DELETING LEADING space.
+    "total qty pcs
+    WRITE lv_qty_pcs_tot TO ls_surat_jalan_data-head-tot_pcs.
+    SHIFT ls_surat_jalan_data-head-tot_pcs LEFT DELETING LEADING space.
+
+
+    APPEND ls_surat_jalan_data TO ct_surat_jalan_data.
+
+  ENDLOOP.
+
+
+
+
+*  "POPULATE ITEM DATA
+*  SELECT * FROM zsdtb_act_ship
+*    INTO TABLE @DATA(lt_act_ship)
+*  WHERE tknum = @uv_tknum AND status ='ESTIMATE'.
+*
+*  SELECT * FROM zsdtb_act_ship_d
+*    INTO TABLE @DATA(lt_act_ship_d)
+*  WHERE tknum = @uv_tknum AND status = 'ESTIMATE'.
+*
+*
+*  IF lt_act_ship  IS INITIAL OR lt_act_ship_d IS INITIAL.
+*    MESSAGE 'Container Planning Data is Not Maintained Yet' TYPE 'S' DISPLAY LIKE 'E'.
+*    RETURN.
+*  ENDIF.
+
+*             SELECT vbeln, bstkd FROM vbkd INTO TABLE @DATA(lt_so)
+*               FOR ALL ENTRIES IN @lt_act_ship_d
+*               WHERE bstkd = @lt_act_ship_d-bstkd.
+*
+*             SORT lt_so ASCENDING BY bstkd vbeln.
+*               DELETE ADJACENT DUPLICATES FROM lt_so COMPARING bstkd vbeln.
+
+
+
+*
+*  SORT lt_act_ship BY container_id.
+*  SORT lt_act_ship_d BY container_id.
+
+*
+*     LOOP AT lt_act_ship INTO DATA(ls_act_ship).
+*
+*       CLEAR: ls_surat_jalan_data, lt_item_int, lt_item, lv_qty_pcs_tot, lv_qty_ctn_tot.
+*
+*        READ TABLE lt_act_ship_d TRANSPORTING NO FIELDS WITH KEY container_id = ls_act_ship-container_id BINARY SEARCH.
+*        IF sy-subrc EQ 0.
+*
+*            LOOP AT lt_act_ship_d INTO DATA(ls_act_ship_d) FROM sy-tabix.
+*              IF ls_act_ship_d-container_id <> ls_act_ship-container_id.
+*                EXIT.
+*                ENDIF.
+*                CLEAR: ls_item_int.
+*
+*                READ TABLE lt_so INTO DATA(ls_so) INDEX 1.
+*                IF sy-subrc EQ 0.
+*                  ls_item_int-so_number      = ls_so-vbeln.
+*                  ENDIF.
+*
+*                ls_item_int-vbeln            = ls_act_ship_d-vbeln.
+*                ls_item_int-style            = ls_act_ship_d-style.
+*                ls_item_int-po               = ls_act_ship_d-bstkd.
+*                ls_item_int-qty_pcs          = ls_act_ship_d-tot_pcs.
+*                ls_item_int-qty_ctn          = ls_act_ship_d-tot_ctn_qty.
+*                COLLECT ls_item_int INTO lt_item_int.
+*
+*               lv_qty_pcs_tot = lv_qty_pcs_tot + ls_act_ship_d-tot_pcs.
+*               lv_qty_ctn_tot = lv_qty_ctn_tot + ls_act_ship_d-tot_ctn_qty.
+*
+*               ENDLOOP.
+*
+*               ENDIF.
+*
+*               LOOP AT lt_item_int INTO ls_item_int.
+*                 CLEAR: ls_item.
+*                 ls_item = CORRESPONDING #( ls_item_int ).
+*                 "write to external format
+*                 WRITE ls_item_int-qty_pcs TO ls_item-qty_pcs.
+*                 SHIFT ls_item-qty_pcs LEFT DELETING LEADING space.
+*                 "write to external format
+*                 WRITE ls_item_int-qty_ctn TO ls_item-qty_ctn.
+*                 SHIFT ls_item-qty_ctn LEFT DELETING LEADING space.
+*
+*                 APPEND ls_item TO ls_surat_jalan_data-item.
+*
+*                 ENDLOOP.
+*
+*                 ls_surat_jalan_data-head = ls_header.
+*                 ls_surat_jalan_data-head-logo = lv_logo.
+*
+*                 Warehouse
+*                 ls_surat_jalan_data-head-warehouse_name = ls_buyer-lifex.
+*
+*                 SJ Number
+*                 ls_surat_jalan_data-head-sj_no = ls_shipment-vbeln.
+*                 ls_surat_jalan_data-head-sj_date = ls_buyer-wadat_ist.
+*                 ls_surat_jalan_data-head-loading_point = lv_point.
+*
+*                 Destination
+*                 ls_surat_jalan_data-head-dest_country = ls_destination-landx.
+*
+*                 Buyer
+*                 ls_surat_jalan_data-head-buyer_name = ls_buyer-bezei.
+*                 IF ls_buyer-bezei = 'Common'.
+*                   ls_surat_jalan_data-head-buyer_name = ls_customer-name1.
+*                   ENDIF.
+*
+*                 Receiver
+*                 ls_surat_jalan_data-head-fwd_name = ls_vendor-name1.
+*
+*                 Invoice
+*                 ls_surat_jalan_data-head-invoice_no = ls_invoice-vbeln.
+*
+*                 Header
+*                 WRITE lv_name TO ls_surat_jalan_data-head-company_name1.
+*                 SHIFT ls_surat_jalan_data-head-company_name1 LEFT DELETING LEADING space.
+*
+*                 Sign
+*                 IF ls_buyer-lfart EQ 'DLAC' OR ls_buyer-lfart EQ 'DLSM'.
+*                 READ TABLE lt_sign INTO DATA(ls_sign) WITH KEY position_sig = 'PIMPINAN'.
+*                    IF sy-subrc EQ 0.
+*                      WRITE ls_sign-name_person TO lv_sign1.
+*                      SHIFT ls_sign-name_person LEFT DELETING LEADING space.
+*                      ls_surat_jalan_data-head-pimpinan = ' ( '&& lv_sign1 && ' )'.
+*                    ENDIF.
+*
+*                 READ TABLE lt_sign INTO DATA(ls_sign2) WITH KEY position_sig = 'KEPALA GUDANG'.
+*                    IF sy-subrc EQ 0.
+*                      WRITE ls_sign2-name_person TO lv_sign2.
+*                      SHIFT ls_sign2-name_person LEFT DELETING LEADING space.
+*                      ls_surat_jalan_data-head-kepala_gudang = '         ( '&& lv_sign2 && ' )'.
+*                    ENDIF.
+*
+*                 ELSE.
+*                   ls_surat_jalan_data-head-pimpinan = '(..........................)'.
+*                   ls_surat_jalan_data-head-kepala_gudang = '   (..........................)'.
+*                 ENDIF.
+*
+*                 kendaraan
+*                 ls_surat_jalan_data-head-truck_no = ls_act_ship-truck_plate_no.
+*
+*                 total qty ctn
+*                 WRITE lv_qty_ctn_tot TO ls_surat_jalan_data-head-tot_ctn.
+*                 SHIFT ls_surat_jalan_data-head-tot_ctn LEFT DELETING LEADING space.
+*                 total qty pcs
+*                 WRITE lv_qty_pcs_tot TO ls_surat_jalan_data-head-tot_pcs.
+*                 SHIFT ls_surat_jalan_data-head-tot_pcs LEFT DELETING LEADING space.
+*
+*                 Printed on
+*                 ls_surat_jalan_data-head-datum = lv_datum.
+*                 ls_surat_jalan_data-head-uzeit = lv_uzeit.
+*                 APPEND ls_surat_jalan_data TO ct_surat_jalan_data.
+*
+*            ENDLOOP.
+
+
+ENDFORM.
+
+
+
+
+FORM f_print USING ut_surat_jalan_data TYPE gtt_surat_jalan_data.
+  DATA:
+    ls_outputparams TYPE sfpoutputparams,
+    lv_fm           TYPE funcname,
+    lx_root         TYPE REF TO cx_root.
+
+  TRY.
+      CALL FUNCTION 'FP_FUNCTION_MODULE_NAME'
+        EXPORTING
+          i_name     = 'ZSDSFP_SJ'
+        IMPORTING
+          e_funcname = lv_fm.
+
+      IF ut_surat_jalan_data IS NOT INITIAL.
+
+        ls_outputparams-dest     = 'LCLP'.
+        ls_outputparams-nodialog = 'X'.
+        ls_outputparams-preview  = 'X'.
+
+        CALL FUNCTION 'FP_JOB_OPEN'
+          CHANGING
+            ie_outputparams = ls_outputparams
+          EXCEPTIONS
+            cancel          = 1
+            usage_error     = 2
+            system_error    = 3
+            internal_error  = 4
+            OTHERS          = 5.
+        IF sy-subrc <> 0.
+          MESSAGE ID sy-msgid TYPE fiehc_con_msgty_s NUMBER sy-msgno
+            WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4
+            DISPLAY LIKE fiehc_con_msgty_e.
+          LEAVE LIST-PROCESSING.
+        ENDIF.
+
+        LOOP AT ut_surat_jalan_data INTO DATA(ls_surat_jalan_data).
+
+          DATA:
+          ls_docparams   TYPE sfpdocparams.
+
+          CALL FUNCTION lv_fm
+            EXPORTING
+              /1bcdwb/docparams = ls_docparams
+              is_head           = ls_surat_jalan_data-head
+              it_item           = ls_surat_jalan_data-item
+            EXCEPTIONS
+              usage_error       = 1
+              system_error      = 2
+              internal_error    = 3
+              OTHERS            = 4.
+          IF sy-subrc NE 0.
+            MESSAGE ID sy-msgid TYPE fiehc_con_msgty_s NUMBER sy-msgno
+              WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4
+              DISPLAY LIKE fiehc_con_msgty_e.
+            LEAVE LIST-PROCESSING.
+          ENDIF.
+
+
+        ENDLOOP.
+
+
+        CALL FUNCTION 'FP_JOB_CLOSE'
+          EXCEPTIONS
+            usage_error    = 1
+            system_error   = 2
+            internal_error = 3
+            OTHERS         = 4.
+        IF sy-subrc <> 0.
+          MESSAGE ID sy-msgid TYPE fiehc_con_msgty_s NUMBER sy-msgno
+            WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4
+            DISPLAY LIKE fiehc_con_msgty_e.
+          LEAVE LIST-PROCESSING.
+        ENDIF.
+      ENDIF.
+
+    CATCH cx_root INTO lx_root.                          "#EC CATCH_ALL
+      MESSAGE lx_root->get_text( ) TYPE fiehc_con_msgty_s
+        DISPLAY LIKE fiehc_con_msgty_e.
+  ENDTRY.
+
+ENDFORM.
+
+
+
+form PROTOCOL_UPDATE.
+
+  IF XSCREEN = SPACE.
+    CALL FUNCTION 'NAST_PROTOCOL_UPDATE'
+         EXPORTING
+           MSG_ARBGB  = 'ZSD'
+           MSG_NR     = '024'
+           MSG_TY     = 'E'
+           MSG_V1     = SYST-MSGV1
+           MSG_V2     = SYST-MSGV2
+           MSG_V3     = SYST-MSGV3
+           MSG_V4     = SYST-MSGV4.
+
+   ELSE.
+     MESSAGE ID 'ZSD' TYPE 'E' NUMBER '024'
+              WITH SYST-MSGV1 SYST-MSGV2 SYST-MSGV3 SYST-MSGV4.
+   ENDIF.
+
+
+
+  ENDFORM.
