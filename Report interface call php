@@ -1,0 +1,2116 @@
+*&---------------------------------------------------------------------*
+*& Report ZSDRP_MESS
+*& Func   : Irwan R ----------------------------------------------------*
+*& Abaper : Irwan R
+*& Report for interfacing data PRO,Order  and Ship Doc to Pack N Go and GMS
+*&---------------------------------------------------------------------*
+REPORT zsdrp_mess.
+
+TABLES : zpptb_upl_po, afpo, zmmtb_matvar, zpptb_sodetail , zsdtb_uni_gms, vbak, vbkd,zsdtb_pebinv .
+
+TYPE-POOLS : slis.
+
+DATA : v_amt       TYPE p DECIMALS 2,
+       v1          TYPE tcurr-ffact,
+       v2          TYPE tcurr-tfact,
+       v3          TYPE tcurr-ukurs,
+       v4          TYPE datum,
+       c_separator TYPE c1 VALUE ';',
+       lv_message  TYPE string,
+       text15      TYPE string VALUE 'Error Message: '.
+
+TYPES : BEGIN OF ty_text,
+          text(30000) TYPE c,
+        END OF ty_text.
+
+TYPES : BEGIN OF ty_report_mess,
+          aufnr        TYPE afpo-aufnr, "no 23
+          kdauf        TYPE afpo-kdauf, "no 3
+          psmng        TYPE p DECIMALS 0, " no 11 " Updated by PB-FT06 delete decimal req by pak iwan 051120
+          posnr        TYPE afpo-posnr,
+          zmatvardesc  TYPE zmmtb_matvar-zmatvardesc, " no 9
+          size_value   TYPE zmmtb_matvar-size_value, " no 7
+          color_value  TYPE zmmtb_matvar-color_value, " no 6
+          zmatgen      TYPE zmmtb_matvar-zmatgen, " no 5
+          ltrmi        TYPE afpo-ltrmi,
+          destn        TYPE zpptb_upl_po-destn, " no 14
+          bstkd        TYPE zpptb_upl_po-bstkd, " no 1
+          zseas        TYPE vbak-zseas, "no 4
+          vkgrp        TYPE vbak-vkgrp, " no 8
+          zitemcode    TYPE zsdtb_uni_gms-zitemcode, "no 12
+          ihrez_e      TYPE zsdtb_uni_gms-ihrez_e, " no 2
+          order_plan   TYPE zsdtb_uni_gms-ihrez_e,
+          zsetcode     TYPE zsdtb_uni_gms-zsetcode, " no 21
+          zshiptoportc TYPE zsdtb_uni_gms-zshiptoportc, " no 22
+          zdonumber    TYPE zsdtb_uni_gms-zdonumber, " no 15
+          zshiptoport  TYPE zsdtb_uni_gms-zshiptoport, " no 16
+          bezei        TYPE t173t-bezei, " no 10
+          zskucode     TYPE zsdtb_uni_gms-zskucode, "no 20
+          ernam        TYPE aufk-ernam, " NO 19
+*        AEDAT         TYPE ZPPTB_UPL_PO-AEDAT,
+          erfzeit      TYPE aufk-erfzeit, " NO 18
+          mbdat        TYPE zpptb_sodetail-mbdat, " no 13
+          erdat        TYPE aufk-erdat, " no 17
+          werks        TYPE aufk-werks,
+          zqtyset      TYPE p DECIMALS 0,"zsdtb_uni_gms_v3-zqtyset, " Updated by PB-FT06 : 210921 - Adding new column qty set - req by Afifah IT Klego
+
+        END OF ty_report_mess.
+
+
+
+ "=========Types of Invoice Interface 230921================"
+ TYPES : BEGIN OF ty_invoice,
+   invoice_no     TYPE zsdtb_pebinv-invoice_no,
+   invoice_date   TYPE zsdtb_pebinv-invoice_date,
+   etd            TYPE vttk-datbg,
+   shipby         TYPE t173t-bezei,
+*   dest           TYPE t171t-bztxt,
+   inco2          TYPE likp-inco2,
+   eta            TYPE vttk-daten,
+   vssl           TYPE vttk-zzvsslname,
+   vyg            TYPE vttk-zzvygno,
+   bctype         TYPE likp-zbctype,
+   bcdoc          TYPE likp-zbctype,
+   bcdaft         TYPE likp-zbcdoc,
+   bcdate         TYPE likp-zbcdate,
+   bcaju          TYPE likp-zbcaju,
+   bezei          TYPE tvrot-bezei,
+   shipmode       TYPE t173t-bezei,
+   shipto         TYPE t005t-landx,
+  END OF ty_invoice.
+ "=========Types of Invoice Interface 230921================"
+
+
+TYPES :
+  BEGIN OF gs_zpptb_upl_po,
+    destn TYPE zpptb_upl_po-destn, " C LENGTH 20, ",
+    bstkd TYPE zpptb_upl_po-bstkd,
+    aenam TYPE zpptb_upl_po-aenam,
+    aedat TYPE zpptb_upl_po-aedat,
+    aezet TYPE zpptb_upl_po-aezet,
+    kdauf TYPE zpptb_upl_po-kdauf,
+    color TYPE  zpptb_upl_po-color,
+    aufnr TYPE zpptb_upl_po-aufnr,
+  END OF  gs_zpptb_upl_po,
+
+  BEGIN OF gs_afpo,
+    aufnr TYPE afpo-aufnr,
+    kdauf TYPE afpo-kdauf,
+    psmng TYPE p DECIMALS 0, " Updated by PB-FT06 delete decimal req by pak iwan 051120
+    posnr TYPE afpo-posnr,
+    ltrmi TYPE afpo-ltrmi,
+    matnr TYPE afpo-matnr,
+  END OF gs_afpo,
+
+  BEGIN OF gs_zmmtb_matvar,
+    zmatvardesc TYPE zmmtb_matvar-zmatvardesc,
+    size_value  TYPE zmmtb_matvar-size_value,
+    color_value TYPE zmmtb_matvar-color_value,
+    zmatgen     TYPE zmmtb_matvar-zmatgen,
+    zmatvar     TYPE zmmtb_matvar-zmatvar,
+  END OF gs_zmmtb_matvar,
+
+  BEGIN OF gs_zsdtb_uni_gms,
+    vbeln        TYPE zsdtb_uni_gms-vbeln,
+    zitemcode    TYPE zsdtb_uni_gms-zitemcode,
+    ihrez_e      TYPE zsdtb_uni_gms-ihrez_e,
+    zsetcode     TYPE zsdtb_uni_gms-zsetcode,
+    zshiptoportc TYPE zsdtb_uni_gms-zshiptoportc,
+    zdonumber    TYPE zsdtb_uni_gms-zdonumber,
+    zshiptoport  TYPE zsdtb_uni_gms-zshiptoport,
+    zskucode     TYPE zsdtb_uni_gms-zskucode,
+    zcolor       TYPE zsdtb_uni_gms-zcolor,
+    bstkd        TYPE zsdtb_uni_gms-bstkd,
+    zsizes       TYPE zsdtb_uni_gms-zsizes,  " UPDATED BY PB-FT06 ADDING SIZE 220920
+    zqtyset      TYPE p DECIMALS 0, "zsdtb_uni_gms_v3-zqtyset, " Updated by PB-FT06 : 210921 - Adding new column qty set - req by Afifah IT Klego
+  END OF gs_zsdtb_uni_gms,
+
+  BEGIN OF gs_vbak,
+    vbeln TYPE vbak-vbeln,
+    zseas TYPE vbak-zseas,
+    vkgrp TYPE vbak-vkgrp,
+  END OF gs_vbak,
+
+  BEGIN OF gs_vbkd,
+    vbeln TYPE vbkd-vbeln,
+    vsart TYPE vbkd-vsart,
+    bstkd TYPE vbkd-bstkd,
+  END OF gs_vbkd,
+
+  BEGIN OF gs_zpptb_sodetail,
+    aufnr   TYPE zpptb_sodetail-aufnr,
+    zmatvar TYPE zpptb_sodetail-zmatvar,
+    mbdat   TYPE zpptb_sodetail-mbdat,
+  END OF gs_zpptb_sodetail,
+
+  BEGIN OF gs_t173t,
+    vsart TYPE t173t-vsart,
+    bezei TYPE t173t-bezei,
+    spras TYPE t173t-spras,
+  END OF gs_t173t,
+
+  BEGIN OF gs_t171t,                        " Update Ship to port req by Fian 300620
+    spras TYPE t171t-spras,
+    bzirk TYPE t171t-bzirk, "C LENGTH 20,
+    bztxt TYPE t171t-bztxt,
+  END OF gs_t171t,                          " End of update
+
+  BEGIN OF gs_aufk,
+    aufnr   TYPE aufk-aufnr,
+    erdat   TYPE aufk-erdat,
+    werks   TYPE aufk-werks,
+    ernam   TYPE aufk-ernam,
+    erfzeit TYPE aufk-erfzeit,
+    loekz   TYPE aufk-loekz,
+  END OF gs_aufk,
+
+  BEGIN OF fs,
+    col1(20) TYPE c,
+    col2(20) TYPE c,
+    col3(20) TYPE c,
+  END OF fs,
+
+  BEGIN OF gs_gms,
+    bstkd  TYPE vbkd-bstkd,
+    vbeln  TYPE vbap-vbeln,
+    posnr  TYPE vbap-posnr,
+    zseas  TYPE vbak-zseas,
+    matnr  TYPE vbap-matnr,
+    style  TYPE c LENGTH 40,
+    color  TYPE c LENGTH 40,
+    size   TYPE c LENGTH 40,
+    vkgrp  TYPE vbak-vkgrp,
+    arktx  TYPE vbap-arktx,
+    vsart  TYPE vbkd-vsart,
+    bezei  TYPE t173t-bezei,
+    kwmeng TYPE vbap-kwmeng,
+    edatu  TYPE vbep-edatu,
+    land1  TYPE vbpa-land1,
+    kunnr  TYPE vbpa-kunnr,
+    landx  TYPE t005t-landx,
+    erdat  TYPE vbak-erdat,
+    erzet  TYPE vbak-erzet,
+    ernam  TYPE vbak-ernam,
+  END OF gs_gms,
+
+
+
+
+  BEGIN OF gs_zsdtb_uni_gms1.
+    INCLUDE STRUCTURE zsdtb_uni_gms_v3.
+TYPES :
+  edatu TYPE vbep-edatu,
+  END OF gs_zsdtb_uni_gms1,
+
+  BEGIN OF gs_vbap.
+    INCLUDE STRUCTURE vbap.
+TYPES END OF gs_vbap.
+
+*types BEGIN OF gs_zsdtb_uni_gms1.
+*    edatu type
+*    INCLUDE STRUCTURE zsdtb_uni_gms_v3.
+*TYPES  END  OF gs_zsdtb_uni_gms1.
+
+
+
+DATA: it_report_mess    TYPE STANDARD TABLE OF ty_report_mess WITH HEADER LINE,
+      wa_report_mess    TYPE ty_report_mess,
+      it_report_inv     TYPE STANDARD TABLE OF ty_invoice WITH HEADER LINE,
+      wa_report_inv     TYPE ty_invoice,
+      it_uni_v3         TYPE STANDARD TABLE OF zsdtb_uni_gms_v3 WITH HEADER LINE, " ADDING TABLE UNI GMS V3 BY PB-FT06 300920
+      wa_uni_v3         TYPE zsdtb_uni_gms_v3,
+      it_zpptb_upl_po   TYPE STANDARD TABLE OF gs_zpptb_upl_po WITH HEADER LINE,
+      wa_zpptb_upl_po   TYPE gs_zpptb_upl_po,
+      it_afpo           TYPE STANDARD TABLE OF gs_afpo WITH HEADER LINE,
+      wa_afpo           TYPE gs_afpo,
+      it_gms            TYPE STANDARD TABLE OF gs_gms WITH HEADER LINE,
+      wa_gms            TYPE gs_gms,
+      it_zmmtb_matvar   TYPE STANDARD TABLE OF gs_zmmtb_matvar WITH HEADER LINE,
+      wa_zmmtb_matvar   TYPE gs_zmmtb_matvar,
+      it_zsdtb_uni_gms  TYPE STANDARD TABLE OF gs_zsdtb_uni_gms WITH HEADER LINE,
+      it_zsdtb_uni_gms1 TYPE STANDARD TABLE OF gs_zsdtb_uni_gms1 WITH HEADER LINE,
+      wa_zsdtb_uni_gms  TYPE gs_zsdtb_uni_gms,
+      it_vbak           TYPE STANDARD TABLE OF gs_vbak WITH HEADER LINE,
+      wa_vbak           TYPE gs_vbak,
+      it_vbap           TYPE STANDARD TABLE OF gs_vbap WITH HEADER LINE,
+      it_vbkd           TYPE STANDARD TABLE OF gs_vbkd WITH HEADER LINE,
+      wa_vbkd           TYPE gs_vbkd,
+      it_zpptb_sodetail TYPE STANDARD TABLE OF gs_zpptb_sodetail WITH HEADER LINE,
+      wa_zpptb_sodetail TYPE gs_zpptb_sodetail,
+      it_t173t          TYPE STANDARD TABLE OF gs_t173t WITH HEADER LINE,
+      wa_t173t          TYPE gs_t173t,
+      it_t171t          TYPE STANDARD TABLE OF gs_t171t WITH HEADER LINE,
+      wa_t171t          TYPE gs_t171t,
+      it_aufk           TYPE STANDARD TABLE OF gs_aufk WITH HEADER LINE,
+      wa_aufk           TYPE gs_aufk,
+      it_fs             TYPE STANDARD TABLE OF fs WITH HEADER LINE,
+      gw_layout         TYPE slis_layout_alv,
+      gt_cat            TYPE slis_t_fieldcat_alv,
+      gw_cat            TYPE slis_fieldcat_alv,
+      gt_event          TYPE slis_t_event,
+      gw_event          TYPE slis_alv_event,
+      gt_sort           TYPE slis_t_sortinfo_alv,
+      gw_sort           TYPE slis_sortinfo_alv,
+      gt_text           TYPE TABLE OF ty_text WITH HEADER LINE,
+      gw_text           TYPE ty_text.
+
+
+SELECTION-SCREEN  BEGIN OF BLOCK a WITH FRAME TITLE a1.
+
+PARAMETERS: p_rad5 RADIOBUTTON GROUP rad USER-COMMAND sc, " Invoice
+            p_rad1 RADIOBUTTON GROUP rad DEFAULT 'X',
+            p_rad2 RADIOBUTTON GROUP rad,
+            p_rad3 RADIOBUTTON GROUP rad,
+            p_rad4 RADIOBUTTON GROUP rad." uni GMS 300920
+
+SELECTION-SCREEN END OF BLOCK a.
+
+SELECTION-SCREEN BEGIN OF BLOCK b WITH FRAME TITLE a2.
+SELECT-OPTIONS:
+s_erdat   FOR it_aufk-erdat MODIF ID sc1, "created date PRO.
+*s_erdat2  FOR it_uni_v3-erdat MODIF ID sc1, " CREATED ON DATE UNI_GMS
+s_werks   FOR it_aufk-werks MODIF ID sc1 OBLIGATORY DEFAULT 'AG*', " Obligatory
+s_kdauf   FOR it_afpo-kdauf MODIF ID sc1 .
+SELECTION-SCREEN END OF BLOCK b.
+
+
+"Add new Selection Screen Parameter for Invoice to Pack N GO 230921
+SELECTION-SCREEN BEGIN OF BLOCK c WITH FRAME TITLE a3.
+  SELECT-OPTIONS:
+
+*  s_werks2 FOR it_aufk-werks OBLIGATORY MODIF ID sc2 DEFAULT 'AG*',
+  s_inv FOR zsdtb_pebinv-invoice_no MODIF ID sc2.
+
+  SELECTION-SCREEN END OF BLOCK c.
+
+  SELECTION-SCREEN BEGIN OF BLOCK d WITH FRAME TITLE TEXT-001.
+PARAMETERS:
+ c_cek1    AS CHECKBOX MODIF ID sc2 , "Display
+ c_cek2    AS CHECKBOX MODIF ID sc2 DEFAULT 'X'. "Send
+SELECTION-SCREEN END   OF BLOCK d.
+"End of addition
+
+
+
+INITIALIZATION.
+  a1 = 'Select'.
+  a2 = 'Parameters'.
+  a3 = 'Invoice Selection'.
+
+AT SELECTION-SCREEN.
+  IF p_rad4 = 'X'.
+    IF s_kdauf-low = ''.
+      MESSAGE 'KP no harus diisi' TYPE 'E'.
+    ENDIF.
+  ENDIF.
+
+AT SELECTION-SCREEN OUTPUT.
+PERFORM scmodify.
+
+START-OF-SELECTION.
+IF p_rad5 NE 'X'.
+  PERFORM get_data.
+  PERFORM proses_data.
+ELSE.
+  PERFORM get_datainv.
+ENDIF.
+
+  IF p_rad1 = 'X' AND s_werks-low EQ 'AG02'.
+    PERFORM display_data2.
+  ELSEIF p_rad1 = 'X'.
+    PERFORM display_data.
+  ENDIF.
+
+  IF p_rad2 = 'X'.
+    PERFORM send_web.
+  ELSEIF p_rad3 = 'X'.
+    PERFORM send_web.
+  ELSEIF p_rad4 = 'X'.
+    CHECK it_vbap[] IS NOT INITIAL.
+    PERFORM send_web1.
+  ENDIF.
+
+  IF c_cek1 EQ 'X' AND c_cek2 EQ 'X'.
+    MESSAGE 'Hanya boleh pilih satu checkbox' TYPE 'I'.
+    EXIT.
+  ELSEIF c_cek1 EQ ' ' AND c_cek2 EQ ' '.
+    MESSAGE 'Pilih salah satu checkbox' TYPE 'I'.
+  ENDIF.
+
+
+  IF p_rad5 = 'X' AND c_cek1 = 'X'.
+    PERFORM display_datainv.
+  ELSEIF p_rad5 = 'X' AND c_cek2 = 'X'.
+    PERFORM send_inv.
+  ENDIF.
+
+
+
+
+"New Logic Get data invoice.
+
+FORM get_datainv.
+
+  DATA : vsart TYPE vttk-vsart,
+         kunnr TYPE likp-kunnr,
+         land1 TYPE kna1-land1,
+         bzirk TYPE knvv-bzirk,
+         bztxt TYPE t171t-bztxt,
+         route TYPE likp-route.
+
+SELECT *
+  FROM zsdtb_pebinv INTO TABLE @DATA(it_invoice)
+  WHERE invoice_no IN @s_inv.
+
+IF it_invoice[] IS INITIAL.
+  EXIT.
+ENDIF.
+
+SELECT * FROM vttk INTO TABLE @DATA(it_vttk)
+  FOR ALL ENTRIES IN @it_invoice
+  WHERE tknum = @it_invoice-tknum.
+
+SELECT * FROM vttp INTO TABLE @DATA(it_vttp)
+  FOR ALL ENTRIES IN @it_vttk
+  WHERE tknum = @it_vttk-tknum.
+
+SELECT * FROM likp INTO TABLE @DATA(it_likp)
+  FOR ALL ENTRIES IN @it_vttp
+  WHERE vbeln = @it_vttp-vbeln.
+
+
+"Data Processing
+  LOOP AT it_invoice INTO DATA(wa_invoice).
+
+    wa_report_inv-invoice_no = wa_invoice-invoice_no.
+    wa_report_inv-invoice_date = wa_invoice-invoice_date.
+
+  READ TABLE it_vttk INTO DATA(wa_vttk) WITH KEY tknum = wa_invoice-tknum.
+    IF sy-subrc EQ 0.
+      wa_report_inv-etd = wa_vttk-datbg.
+      wa_report_inv-eta = wa_vttk-daten.
+      wa_report_inv-vssl = wa_vttk-zzvsslname.
+      wa_report_inv-vyg = wa_vttk-zzvygno.
+      vsart             = wa_vttk-vsart.
+      ENDIF.
+
+  READ TABLE it_vttp INTO DATA(wa_vttp) WITH KEY tknum = wa_invoice-tknum.
+  READ TABLE it_likp INTO DATA(wa_likp) WITH KEY vbeln = wa_vttp-vbeln.
+  IF sy-subrc EQ 0.
+    wa_report_inv-bctype = wa_likp-zbctype.
+    wa_report_inv-bcdoc  = wa_likp-zbctype.
+    wa_report_inv-bcdaft = wa_likp-zbcdoc.
+    wa_report_inv-bcdate  = wa_likp-zbcdate.
+    wa_report_inv-bcaju   = wa_likp-zbcaju.
+    wa_report_inv-inco2   = wa_likp-inco2.
+    kunnr                 = wa_likp-kunnr.
+    route                 = wa_likp-route.
+
+    ENDIF.
+
+
+SELECT SINGLE bezei INTO wa_report_inv-bezei
+  FROM tvrot
+  WHERE route = route AND spras = 'EN'.
+
+
+SELECT SINGLE bezei INTO wa_report_inv-shipby
+  FROM t173t
+  WHERE vsart = vsart AND spras = 'EN'.
+ wa_report_inv-shipmode = wa_report_inv-shipby.
+
+SELECT SINGLE bzirk INTO bzirk
+  FROM knvv
+  WHERE kunnr = kunnr.
+
+SELECT SINGLE bztxt INTO bztxt
+  FROM t171t
+  WHERE bzirk = bzirk AND spras = 'EN'.
+
+SELECT SINGLE land1 INTO land1
+  FROM kna1
+  WHERE kunnr = kunnr.
+
+SELECT SINGLE landx INTO wa_report_inv-shipto
+  FROM t005t
+  WHERE land1 = land1 AND spras = 'EN'.
+
+*wa_report_inv-dest = bztxt+5.
+
+
+APPEND wa_report_inv TO it_report_inv.
+CLEAR wa_report_inv.
+
+    ENDLOOP.
+
+
+  ENDFORM.
+
+
+FORM get_data.
+
+  DATA :  dates LIKE sy-datum.
+  dates = sy-datum - 1.
+
+
+  IF p_rad1 = 'X' OR p_rad3 = 'X'.
+
+    SELECT a~aufnr a~erdat a~werks a~ernam a~erfzeit a~loekz
+      INTO TABLE it_aufk FROM aufk AS a
+      INNER JOIN zpptb_upl_po AS z ON a~aufnr EQ z~aufnr
+      WHERE a~erdat IN s_erdat
+      AND a~werks IN s_werks
+    AND a~loekz NE 'X'.
+
+      SORT it_aufk BY aufnr.
+      DELETE ADJACENT DUPLICATES FROM it_aufk COMPARING aufnr.
+
+
+  ENDIF.
+
+  IF p_rad2 = 'X'.
+    SELECT aufnr erdat werks ernam erfzeit loekz
+    INTO TABLE it_aufk FROM aufk
+    WHERE erdat = dates
+    AND werks IN s_werks
+    AND loekz NE 'X'.
+
+  ENDIF.
+
+  IF p_rad4 = 'X'.
+
+    SELECT *
+      INTO TABLE it_vbap FROM vbap
+      WHERE vbeln IN s_kdauf
+      AND werks IN s_werks
+      AND abgru EQ ' '.
+    CHECK it_vbap[] IS NOT INITIAL.
+    SELECT *
+    INTO TABLE it_zsdtb_uni_gms1 FROM zsdtb_uni_gms_v3
+      FOR ALL ENTRIES IN it_vbap
+      WHERE vbeln EQ it_vbap-vbeln
+      AND posnr EQ it_vbap-posnr
+      AND bstkd LIKE 'P%'.
+
+  ENDIF.
+
+  LOOP AT it_zsdtb_uni_gms1.
+    SELECT SINGLE edatu INTO it_zsdtb_uni_gms1-edatu FROM vbep
+      WHERE vbeln = it_zsdtb_uni_gms1-vbeln AND posnr = it_zsdtb_uni_gms1-posnr.
+    MODIFY it_zsdtb_uni_gms1.
+  ENDLOOP.
+
+  IF it_zsdtb_uni_gms1[] IS INITIAL.
+
+    SELECT p~vbeln p~posnr p~matnr p~arktx p~kwmeng
+           k~zseas k~vkgrp k~erdat k~erzet k~ernam
+           d~bstkd d~vsart
+*          A~LAND1 A~KUNNR
+      INTO CORRESPONDING FIELDS OF TABLE it_gms
+      FROM vbap AS p
+      INNER JOIN
+      vbak AS k ON p~vbeln = k~vbeln
+      INNER JOIN
+      vbkd AS d ON p~vbeln = d~vbeln AND p~posnr = d~posnr
+*     INNER JOIN
+*     VBPA AS A ON P~VBELN = A~VBELN
+
+      WHERE p~vbeln IN s_kdauf
+*     AND A~PARVW EQ 'SH'
+      AND p~abgru EQ ' '.
+
+
+    LOOP AT it_gms.
+      SELECT SINGLE bezei FROM t173t INTO it_gms-bezei
+        WHERE vsart EQ it_gms-vsart AND spras EQ 'EN'.
+
+      SELECT SINGLE edatu FROM vbep INTO it_gms-edatu
+        WHERE vbeln EQ it_gms-vbeln AND posnr EQ it_gms-posnr.
+
+      SELECT SINGLE land1 FROM vbpa INTO it_gms-land1
+        WHERE vbeln EQ it_gms-vbeln AND parvw EQ 'WE'.
+
+      SELECT SINGLE landx FROM t005t INTO it_gms-landx
+        WHERE land1 EQ it_gms-land1 AND spras EQ 'EN'.
+
+      SPLIT it_gms-matnr AT '.' INTO it_gms-style it_gms-color it_gms-size.
+
+      MODIFY it_gms.
+    ENDLOOP.
+
+    LOOP AT it_gms.
+      it_zsdtb_uni_gms1-bstkd = it_gms-bstkd.
+      it_zsdtb_uni_gms1-vbeln = it_gms-vbeln.
+      it_zsdtb_uni_gms1-posnr = it_gms-posnr.
+      it_zsdtb_uni_gms1-zseas = it_gms-zseas.
+      it_zsdtb_uni_gms1-zmatgen = it_gms-style.
+      it_zsdtb_uni_gms1-zcolor = it_gms-color.
+      it_zsdtb_uni_gms1-zsizes = it_gms-size.
+      it_zsdtb_uni_gms1-vkgrp = it_gms-vkgrp.
+      it_zsdtb_uni_gms1-maktx = it_gms-arktx.
+      it_zsdtb_uni_gms1-bezei = it_gms-bezei.
+      it_zsdtb_uni_gms1-zqty = it_gms-kwmeng.
+      it_zsdtb_uni_gms1-zetawh = it_gms-edatu.
+      it_zsdtb_uni_gms1-zshiptoport = it_gms-landx.
+      it_zsdtb_uni_gms1-erdat = it_gms-erdat.
+      it_zsdtb_uni_gms1-erzet = it_gms-erzet.
+      it_zsdtb_uni_gms1-ernam = it_gms-ernam.
+      it_zsdtb_uni_gms1-edatu = it_gms-edatu.
+
+      APPEND it_zsdtb_uni_gms1.
+
+    ENDLOOP.
+
+  ENDIF.
+
+  SORT it_zsdtb_uni_gms1 BY vbeln bstkd posnr ASCENDING.
+
+
+  IF it_aufk[] IS NOT INITIAL.
+
+    SELECT  aufnr kdauf psmng posnr ltrmi matnr
+     INTO TABLE it_afpo FROM afpo
+      FOR ALL ENTRIES IN it_aufk
+      WHERE aufnr = it_aufk-aufnr
+      AND kdauf IN s_kdauf
+    AND posnr NE 1.
+  ENDIF.
+
+  IF it_afpo[] IS NOT INITIAL.
+    SELECT u~destn u~bstkd u~aenam u~aedat u~aezet u~kdauf u~color u~aufnr
+      INTO TABLE it_zpptb_upl_po FROM zpptb_upl_po AS u
+      INNER JOIN afpo AS a ON u~aufnr = a~aufnr
+      FOR ALL ENTRIES IN it_afpo
+    WHERE u~aufnr = it_afpo-aufnr.
+
+    SELECT spras bzirk bztxt
+      INTO TABLE it_t171t FROM t171t
+    WHERE spras = 'EN'.
+
+
+    SELECT m~zmatvardesc m~size_value m~color_value m~zmatgen m~zmatvar
+      INTO TABLE it_zmmtb_matvar FROM zmmtb_matvar AS m
+      INNER JOIN afpo AS a ON m~zmatvar = a~matnr
+      FOR ALL ENTRIES IN it_afpo
+    WHERE m~zmatvar = it_afpo-matnr.
+
+
+    SELECT g~vbeln g~zitemcode g~ihrez_e g~zsetcode g~zshiptoportc g~zdonumber g~zshiptoport g~zskucode g~zcolor g~bstkd g~zsizes " ADDING SIZE 220920 PB-FT06
+      INTO TABLE it_zsdtb_uni_gms FROM zsdtb_uni_gms_v3 AS g
+      INNER JOIN zpptb_upl_po AS u ON g~vbeln = u~kdauf
+      AND g~bstkd = u~bstkd AND g~zcolor = u~color
+      FOR ALL ENTRIES IN it_zpptb_upl_po
+    WHERE g~vbeln = it_zpptb_upl_po-kdauf AND g~bstkd = it_zpptb_upl_po-bstkd
+     AND g~zcolor = it_zpptb_upl_po-color AND g~zdonumber NE ' ' .
+
+    SELECT v~vbeln v~zseas v~vkgrp
+      INTO TABLE it_vbak FROM vbak AS v
+      INNER JOIN zpptb_upl_po AS u ON v~vbeln = u~kdauf
+      FOR ALL ENTRIES IN it_zpptb_upl_po
+    WHERE v~vbeln = it_zpptb_upl_po-kdauf.
+
+    SELECT v~vbeln v~vsart v~bstkd INTO TABLE it_vbkd
+      FROM vbkd AS v INNER JOIN zpptb_upl_po AS u
+      ON v~vbeln = u~kdauf AND v~bstkd = u~bstkd
+      FOR ALL ENTRIES IN it_zpptb_upl_po
+    WHERE v~vbeln = it_zpptb_upl_po-kdauf AND v~bstkd = it_zpptb_upl_po-bstkd AND v~vsart NE ' '.
+
+    SELECT t~vsart t~bezei t~spras INTO TABLE it_t173t  FROM t173t AS t
+      INNER JOIN vbkd AS v ON t~vsart = v~vsart
+*   INNER JOIN ZPPTB_UPL_PO AS U ON V~VBELN = U~KDAUF AND V~BSTKD = U~BSTKD
+      FOR ALL ENTRIES IN it_vbkd
+    WHERE t~vsart = it_vbkd-vsart AND t~spras EQ 'EN'.
+*   WHERE V~VBELN = IT_ZPPTB_UPL_PO-KDAUF AND V~BSTKD = IT_ZPPTB_UPL_PO-BSTKD AND T~SPRAS = 'EN'.
+
+    SELECT s~aufnr s~zmatvar s~mbdat INTO TABLE it_zpptb_sodetail
+      FROM zpptb_sodetail AS s
+      INNER JOIN afpo AS a ON s~aufnr = a~aufnr AND s~zmatvar = a~matnr
+      FOR ALL ENTRIES IN it_afpo
+    WHERE s~aufnr = it_afpo-aufnr AND s~zmatvar = it_afpo-matnr.
+  ENDIF.
+ENDFORM.
+
+
+FORM proses_data.
+  DATA string2 TYPE string.
+
+
+  DATA : lv_count TYPE i,
+         city     TYPE string.
+
+
+  IF p_rad4 = ''.
+    LOOP AT it_afpo INTO wa_afpo.
+
+      wa_report_mess-posnr  = wa_afpo-posnr.
+      wa_report_mess-aufnr = wa_afpo-aufnr.
+      wa_report_mess-kdauf = wa_afpo-kdauf.
+      wa_report_mess-psmng = wa_afpo-psmng.
+
+      READ TABLE it_aufk INTO wa_aufk WITH KEY aufnr = wa_afpo-aufnr.
+      IF sy-subrc EQ 0.
+        wa_report_mess-erdat    = wa_aufk-erdat.
+        wa_report_mess-werks    = wa_aufk-werks.
+        wa_report_mess-ernam    = wa_aufk-ernam.
+        wa_report_mess-erfzeit  = wa_aufk-erfzeit.
+      ENDIF.
+
+      READ TABLE it_zpptb_upl_po INTO wa_zpptb_upl_po WITH KEY aufnr = wa_afpo-aufnr.
+      IF sy-subrc EQ 0.
+        wa_report_mess-destn  = wa_zpptb_upl_po-destn.
+        wa_report_mess-bstkd  = wa_zpptb_upl_po-bstkd.
+
+      ENDIF.
+
+      READ TABLE it_t171t INTO wa_t171t WITH KEY bzirk = wa_zpptb_upl_po-destn. " Update Ship to Por req by Fian 300620
+      IF sy-subrc EQ 0.
+        city = wa_t171t-bztxt.
+*        if city eq ' '.
+*         wa_report_mess-zshiptoport = 'CMT'.
+*        else.
+        wa_report_mess-zshiptoport = city+5.
+*        endif.
+      ELSE.
+        wa_report_mess-zshiptoport = 'CMT'.
+
+      ENDIF. " End Of Update
+
+
+
+      READ TABLE it_zmmtb_matvar INTO wa_zmmtb_matvar WITH KEY zmatvar = wa_afpo-matnr.
+      IF sy-subrc EQ 0.
+*        wa_report_mess-zmatvardesc = wa_zmmtb_matvar-zmatvardesc.
+        string2                    = wa_zmmtb_matvar-zmatvardesc.
+        WHILE string2 <> space.
+          SPLIT string2 AT ',' INTO it_fs-col1 it_fs-col2 it_fs-col3 string2.
+        ENDWHILE.
+        wa_report_mess-zmatvardesc = it_fs-col1.
+        wa_report_mess-size_value  = wa_zmmtb_matvar-size_value.
+        wa_report_mess-color_value = wa_zmmtb_matvar-color_value.
+        wa_report_mess-zmatgen     = wa_zmmtb_matvar-zmatgen.
+      ENDIF.
+
+      READ TABLE it_zsdtb_uni_gms INTO wa_zsdtb_uni_gms WITH KEY
+      vbeln = wa_zpptb_upl_po-kdauf
+      bstkd = wa_zpptb_upl_po-bstkd
+      zcolor = wa_zpptb_upl_po-color
+      zsizes = wa_zmmtb_matvar-size_value. " ADDING SIZE PARAMETER 220920 BY PB-FT06
+      IF sy-subrc EQ 0.
+        wa_report_mess-zitemcode    = wa_zsdtb_uni_gms-zitemcode.
+        wa_report_mess-ihrez_e      = wa_zsdtb_uni_gms-ihrez_e.
+*      if wa_zsdtb_uni_gms-ihrez_e eq ' '.     " Updated by PB-FT06 req by Pak Iwan 051120
+*        wa_report_mess-order_plan   = '99999999'.
+*      else.
+        wa_report_mess-order_plan	   = wa_zsdtb_uni_gms-ihrez_e.
+*      endif.                                " End of Updating by PB-FT06 req by Pak Iwan 051120
+*      if wa_zsdtb_uni_gms-zsetcode eq ' '.
+*        wa_report_mess-zsetcode     = 'CMT'.
+*      else.
+        wa_report_mess-zsetcode     = wa_zsdtb_uni_gms-zsetcode.
+*      endif.
+*      if wa_zsdtb_uni_gms-zshiptoportc eq ' '.
+*        wa_report_mess-zshiptoportc = 'CMT'.
+*      else.
+        wa_report_mess-zshiptoportc = wa_zsdtb_uni_gms-zshiptoportc.
+*      endif.
+        wa_report_mess-zdonumber    = wa_zsdtb_uni_gms-zdonumber.
+*    WA_REPORT_MESS-ZSHIPTOPORT  = WA_ZSDTB_UNI_GMS-ZSHIPTOPORT.
+      ELSE.
+        wa_report_mess-order_plan   = '99999999'.
+        wa_report_mess-zsetcode     = 'CMT'.
+        wa_report_mess-zshiptoportc = 'CMT'.
+      ENDIF.
+
+* New Insertion 210921 : Add new column Qtyset Req By Afifah IT Klego , Updated by Irwan .
+
+      READ TABLE it_zsdtb_uni_gms1 INTO DATA(wa_zsdtb_uni_gms1) WITH KEY
+      vbeln = wa_zpptb_upl_po-kdauf
+      bstkd = wa_zpptb_upl_po-bstkd
+      zcolor = wa_zpptb_upl_po-color
+      zsizes = wa_zmmtb_matvar-size_value.
+      IF sy-subrc EQ 0.
+        wa_report_mess-zqtyset = wa_zsdtb_uni_gms1-zqtyset.
+      ENDIF.
+* End of Insertion
+
+      READ TABLE it_vbak INTO wa_vbak WITH KEY vbeln = wa_zpptb_upl_po-kdauf.
+      IF sy-subrc EQ 0.
+        wa_report_mess-zseas  = wa_vbak-zseas.
+        wa_report_mess-vkgrp  = wa_vbak-vkgrp.
+      ENDIF.
+
+      READ TABLE it_vbkd INTO wa_vbkd WITH KEY vbeln = wa_zpptb_upl_po-kdauf bstkd = wa_zpptb_upl_po-bstkd.
+
+
+      READ TABLE it_t173t INTO wa_t173t WITH KEY vsart = wa_vbkd-vsart spras = 'EN'.
+      IF sy-subrc EQ 0.
+        wa_report_mess-bezei = wa_t173t-bezei.
+      ENDIF.
+
+      READ TABLE it_zpptb_sodetail INTO wa_zpptb_sodetail WITH KEY aufnr = wa_afpo-aufnr zmatvar = wa_afpo-matnr.
+      IF sy-subrc EQ 0.
+        wa_report_mess-mbdat = wa_zpptb_sodetail-mbdat.
+      ENDIF.
+
+      APPEND wa_report_mess TO it_report_mess.
+      CLEAR wa_report_mess.
+
+
+*lv_count = lv_count + 1.
+*sort lv_count ASCENDING.
+*WRITE : / lv_count
+
+    ENDLOOP.
+*describe TABLE it_report_mess lines lv_count.
+*WRITE :/ 'Total record displayed is : ', lv_count .
+
+*loop at it_report_mess
+*endloop.
+*WRITE / LV_COUNT.
+  ELSE.
+
+  ENDIF.
+      SORT it_report_mess BY aufnr bstkd size_value psmng posnr ASCENDING.
+      DELETE ADJACENT DUPLICATES FROM it_report_mess COMPARING ALL FIELDS.
+
+
+ENDFORM.
+
+FORM send_web.
+
+  DATA : lv_count TYPE i,
+         msg      TYPE string.
+
+  LOOP AT it_report_mess INTO wa_report_mess.
+
+    DATA : psmngc TYPE string.
+    CLEAR psmngc.
+    psmngc = wa_report_mess-psmng.
+
+    CONCATENATE
+      wa_report_mess-bstkd
+      wa_report_mess-ihrez_e
+      wa_report_mess-kdauf
+      wa_report_mess-order_plan  " adding ship to char req by pak iwan updated by PB-FT06 031120
+      wa_report_mess-zseas
+      wa_report_mess-zmatgen
+      wa_report_mess-color_value
+      wa_report_mess-size_value
+      wa_report_mess-vkgrp
+      wa_report_mess-zmatvardesc
+      wa_report_mess-bezei
+      psmngc
+      wa_report_mess-zitemcode
+      wa_report_mess-mbdat
+      wa_report_mess-destn
+      wa_report_mess-zdonumber
+      wa_report_mess-zshiptoport
+      wa_report_mess-erdat
+      wa_report_mess-erfzeit
+      wa_report_mess-ernam
+      wa_report_mess-zskucode
+      wa_report_mess-zsetcode
+      wa_report_mess-zshiptoportc
+      wa_report_mess-aufnr
+
+
+
+*    LV_BRTWR
+*    LV_WRBTR
+*    'USD'
+
+    INTO gw_text
+    SEPARATED BY c_separator.
+    APPEND gw_text TO gt_text.
+  ENDLOOP.
+
+  DESCRIBE TABLE it_report_mess LINES lv_count.
+
+
+  DATA: filename     TYPE string,
+        filetitle    TYPE string,
+        filefullname TYPE string,
+        year         TYPE string,
+        plant        TYPE string.
+
+  IF s_werks-low = 'AG01'.
+    filename = '\\192.168.145.111\Program\MES\DATA\Upload To MES\'.
+  ELSEIF s_werks-low = 'AG02'.
+    filename = '\\192.168.155.111\Program\MES\DATA\Upload To MES\'.
+  ELSE.
+*  FILENAME = 'C:\Users\Administrator\SAP\TES MES\'.
+  ENDIF.
+  CONCATENATE sy-datum sy-uzeit INTO filetitle SEPARATED BY '_'.
+  CONCATENATE filename filetitle '.TXT' INTO filefullname."'&' 'YEAR=' YEAR '&' 'PLANT=' PLANT  .
+
+  IF sy-batch = 'X'.
+    OPEN DATASET filefullname FOR OUTPUT IN TEXT MODE ENCODING DEFAULT. " IN BINARY MODE.
+    IF sy-subrc EQ 0.
+      LOOP AT gt_text INTO gw_text.
+        TRANSFER gw_text TO filefullname.
+      ENDLOOP.
+      CLOSE DATASET filefullname.
+
+*   OPEN DATASET FILEFULLNAME FOR INPUT IN TEXT MODE ENCODING DEFAULT. "IN BINARY MODE.
+*    DO.
+*      READ DATASET FILEFULLNAME INTO GW_TEXT .
+*      IF SY-SUBRC EQ 0.
+*        EXIT.
+*      ENDIF.
+*      ENDDO.
+*   CLOSE DATASET FILEFULLNAME.
+
+      WRITE :/ 'Total data has been recorded is : ', lv_count.
+    ENDIF.
+  ELSE.
+
+    CALL FUNCTION 'GUI_DOWNLOAD'
+      EXPORTING
+*       BIN_FILESIZE             =
+        filename                 = filefullname
+*       FILETYPE                 = 'ASC'
+*       APPEND                   = ' '
+*       WRITE_FIELD_SEPARATOR    = ' '
+*       HEADER                   = '00'
+*       TRUNC_TRAILING_BLANKS    = ' '
+*       WRITE_LF                 = 'X'
+*       COL_SELECT               = ' '
+*       COL_SELECT_MASK          = ' '
+*       DAT_MODE                 = ' '
+*       CONFIRM_OVERWRITE        = ' '
+*       NO_AUTH_CHECK            = ' '
+*       CODEPAGE                 = ' '
+        ignore_cerr              = abap_true
+*       REPLACEMENT              = '#'
+*       WRITE_BOM                = ' '
+*       TRUNC_TRAILING_BLANKS_EOL       = 'X'
+*       WK1_N_FORMAT             = ' '
+*       WK1_N_SIZE               = ' '
+*       WK1_T_FORMAT             = ' '
+*       WK1_T_SIZE               = ' '
+        write_lf_after_last_line = abap_true
+        show_transfer_status     = abap_true
+*       VIRUS_SCAN_PROFILE       = '/SCET/GUI_DOWNLOAD'
+*      IMPORTING
+*       FILELENGTH               =
+      TABLES
+        data_tab                 = gt_text
+*       FIELDNAMES               =
+      EXCEPTIONS
+        file_write_error         = 1
+        no_batch                 = 2
+        gui_refuse_filetransfer  = 3
+        invalid_type             = 4
+        no_authority             = 5
+        unknown_error            = 6
+        header_not_allowed       = 7
+        separator_not_allowed    = 8
+        filesize_not_allowed     = 9
+        header_too_long          = 10
+        dp_error_create          = 11
+        dp_error_send            = 12
+        dp_error_write           = 13
+        unknown_dp_error         = 14
+        access_denied            = 15
+        dp_out_of_memory         = 16
+        disk_full                = 17
+        dp_timeout               = 18
+        file_not_found           = 19
+        dataprovider_exception   = 20
+        control_flush_error      = 21
+        OTHERS                   = 22.
+
+    IF sy-subrc = 0.
+      lv_message = 'Transaction Success'.
+      MESSAGE lv_message TYPE 'S'.
+      MESSAGE s000(zmm) WITH 'Transaction Success'.
+    ENDIF.
+    IF sy-subrc = 1.
+      lv_message = text15 && ' File Write Error'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 2.
+      lv_message = text15 && ' No Batch'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 3.
+      lv_message = text15 && ' GUI Refuse File Transfer'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 4.
+      lv_message = text15 && ' Invalid Type'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 5.
+      lv_message = text15 && ' No Authority'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 6.
+      lv_message = text15 && ' Unknown Error'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 7.
+      lv_message = text15 && ' Header Not Allowed'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 8.
+      lv_message = text15 && ' Separator Not Allowed'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 9.
+      lv_message = text15 && ' File Size Not Allowed'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 10.
+      lv_message = text15 && ' Header Too Long'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 11.
+      lv_message = text15 && ' DP Error Create'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 12.
+      lv_message = text15 && ' DP Error Send'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 13.
+      lv_message = text15 && ' DP Error Write'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 14.
+      lv_message = text15 && ' DP Unknown Create'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 15.
+      lv_message = text15 && ' Access Denied'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 16.
+      lv_message = text15 && ' DP Out Of Memory'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 17.
+      lv_message = text15 && ' Disk Full'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 18.
+      lv_message = text15 && ' DP Timeout'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 19.
+      lv_message = text15 && ' File Not Found'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 20.
+      lv_message = text15 && ' Data Provider Exception'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 21.
+      lv_message = text15 && ' Control Flush Error'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    IF sy-subrc = 22.
+      lv_message = text15 && ' Others'.
+      MESSAGE lv_message TYPE 'I'.
+    ENDIF.
+    WRITE : / lv_message,
+            'Total data has been recorded is : ', lv_count.
+  ENDIF.
+
+
+
+
+*  DATA: FILENAME1  TYPE STRING,
+*        LV_PATH    TYPE TEXT255,
+*        LV_MESSAGE TYPE STRING,
+*        LV_RC      TYPE C.
+*
+*  YEAR = S_Erdat-LOW(4).
+*  PLANT = S_WERKS-LOW.
+*
+*  FILENAME1 = 'http://192.168.0.247/sap/pi_po/?nmfile='.
+*
+*  CONCATENATE FILENAME1 FILETITLE '.TXT' '&' 'YEAR=' YEAR '&' 'PLANT=' PLANT INTO LV_PATH.
+*
+*  CLEAR: LV_MESSAGE, LV_RC.
+*
+*  ZMMCL_BC_UTIL=>CALL_PHP_SCRIPT(
+*    EXPORTING
+*      IV_PATH    = LV_PATH    " Text, 255 Characters
+*    IMPORTING
+*      EV_MESSAGE = LV_MESSAGE
+*      EV_RC      = LV_RC
+*  ).
+*
+*  IF LV_RC IS NOT INITIAL.
+*    LV_MESSAGE = `Failed to call PHP script ` && LV_PATH.
+*    MESSAGE LV_MESSAGE TYPE 'E'.
+*  ELSE.
+*    LV_MESSAGE = `Successfully call PHP script ` && LV_PATH.
+*    MESSAGE LV_MESSAGE TYPE 'S'.
+*    MESSAGE S000(ZMM) WITH 'Data has been transfered to sharing folder'.
+*  ENDIF.
+
+ENDFORM.
+
+
+
+FORM display_data.
+  DATA : lv_count TYPE i.
+*  if S_WERKS = 'AG01'.
+  PERFORM fill_fieldcat.
+*  elseif S_WERKS = 'AG02'.
+*  PERFORM FILL_FIELDCAT2.
+  gw_layout-zebra = 'X'.
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program = sy-repid
+      is_layout          = gw_layout
+      it_fieldcat        = gt_cat
+      i_default          = ''
+      i_save             = 'X'
+    TABLES
+      t_outtab           = it_report_mess
+    EXCEPTIONS
+      program_error      = 1
+      OTHERS             = 2.
+  IF sy-subrc <> 0.
+  ENDIF.
+
+  DESCRIBE TABLE it_report_mess LINES lv_count.
+  WRITE :/ 'Total record displayed is : ', lv_count .
+*ENDIF.
+ENDFORM.
+
+FORM fill_fieldcat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BSTKD'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Po No'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'IHREZ_E'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Ship To Char'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'KDAUF'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'KP No'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZSEAS'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Season'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZMATGEN'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Style'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'COLOR_VALUE'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Color'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'SIZE_VALUE'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Size'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'VKGRP'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Sales Group'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZMATVARDESC'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Description'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BEZEI'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 5.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Sh.Ty'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'PSMNG'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'QTY Order'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZITEMCODE'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Item Code'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'MBDAT'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Deliv Date'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DESTN'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Sales Dist'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZDONUMBER'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'DO Number'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZSHIPTOPORT'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Ship Port'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ERDAT'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Created On'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ERFZEIT'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Time Created'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ERNAM'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Created By'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZSKUCODE'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'SKU Code'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZSETCODE'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'SET Code'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZSHIPTOPORTC'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'PORT'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'AUFNR'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'NO PRO'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZQTYSET'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'QTY SET'.
+  APPEND gw_cat TO gt_cat.
+
+ENDFORM.
+
+
+
+
+FORM display_data2.
+  DATA : lv_count TYPE i.
+*  if S_WERKS = 'AG01'.
+  PERFORM fill_fieldcat2.
+*  elseif S_WERKS = 'AG02'.
+*  PERFORM FILL_FIELDCAT2.
+  gw_layout-zebra = 'X'.
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program = sy-repid
+      is_layout          = gw_layout
+      it_fieldcat        = gt_cat
+      i_default          = ''
+      i_save             = 'X'
+    TABLES
+      t_outtab           = it_report_mess
+    EXCEPTIONS
+      program_error      = 1
+      OTHERS             = 2.
+  IF sy-subrc <> 0.
+  ENDIF.
+
+  DESCRIBE TABLE it_report_mess LINES lv_count.
+  WRITE :/ 'Total record displayed is : ', lv_count .
+*ENDIF.
+ENDFORM.
+
+FORM fill_fieldcat2.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BSTKD'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Po No'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'IHREZ_E'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Order Plan No'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'KDAUF'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'KP No'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ORDER_PLAN'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Ship To Char'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZSEAS'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Season'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZMATGEN'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Style'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'COLOR_VALUE'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Color'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'SIZE_VALUE'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Size'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'VKGRP'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Sales Group'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZMATVARDESC'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Description'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BEZEI'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 5.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Sh.Ty'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'PSMNG'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'QTY Order'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZITEMCODE'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Item Code'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'MBDAT'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Deliv Date'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'DESTN'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Sales Dist'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZDONUMBER'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'DO Number'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZSHIPTOPORT'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Ship Port'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ERDAT'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Created On'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ERFZEIT'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Time Created'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ERNAM'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Created By'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZSKUCODE'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'SKU Code'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZSETCODE'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'SET Code'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZSHIPTOPORTC'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'PORT'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'AUFNR'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'NO PRO'.
+  APPEND gw_cat TO gt_cat.
+
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ZQTYSET'.
+  gw_cat-tabname = 'IT_REPORT_MESS'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_l = 'QTY SET'.
+  APPEND gw_cat TO gt_cat.
+
+ENDFORM.
+
+FORM send_web1.
+
+  DATA : lv_qty(13)    TYPE c,
+         lv_qtyt(13)   TYPE c,
+         lv_zmweng(13) TYPE c,
+         lv_qtyset(5)  TYPE c,
+         lv_qtyset1    TYPE p DECIMALS 0.
+  LOOP AT it_zsdtb_uni_gms1.
+    WRITE it_zsdtb_uni_gms1-zqty TO lv_qty.
+    WRITE it_zsdtb_uni_gms1-zqty_tot TO lv_qtyt.
+    WRITE it_zsdtb_uni_gms1-zmweng TO lv_zmweng.
+    lv_qtyset1 = it_zsdtb_uni_gms1-zqtyset.
+    WRITE lv_qtyset1 TO lv_qtyset.
+    CONDENSE : lv_qty,lv_qtyt, lv_zmweng, lv_qtyset.
+    CONCATENATE
+      it_zsdtb_uni_gms1-bstkd
+      it_zsdtb_uni_gms1-ihrez_e
+      it_zsdtb_uni_gms1-vbeln
+it_zsdtb_uni_gms1-posnr
+it_zsdtb_uni_gms1-zseas
+it_zsdtb_uni_gms1-zmatgen
+it_zsdtb_uni_gms1-zcolor
+it_zsdtb_uni_gms1-zsizes
+it_zsdtb_uni_gms1-zsetcode
+it_zsdtb_uni_gms1-vkgrp
+it_zsdtb_uni_gms1-maktx
+it_zsdtb_uni_gms1-bezei
+lv_qty
+lv_qtyt
+it_zsdtb_uni_gms1-zitemcode
+it_zsdtb_uni_gms1-zmfc
+it_zsdtb_uni_gms1-zbfc
+it_zsdtb_uni_gms1-zsamplecode
+it_zsdtb_uni_gms1-zetawh
+it_zsdtb_uni_gms1-destination
+it_zsdtb_uni_gms1-zdestcode
+it_zsdtb_uni_gms1-zwhcode
+it_zsdtb_uni_gms1-zdonumber
+it_zsdtb_uni_gms1-zshiptoport
+lv_zmweng
+it_zsdtb_uni_gms1-meins
+it_zsdtb_uni_gms1-erdat
+it_zsdtb_uni_gms1-erzet
+it_zsdtb_uni_gms1-ernam
+it_zsdtb_uni_gms1-zskucode
+it_zsdtb_uni_gms1-zshiptoportc
+it_zsdtb_uni_gms1-zrevised_no
+it_zsdtb_uni_gms1-zrevised_date
+it_zsdtb_uni_gms1-ztrans_mthd
+lv_qtyset      " 210921 - Add new data qty set by Irwan // Req by Afifah.
+it_zsdtb_uni_gms1-edatu
+    INTO gw_text
+    SEPARATED BY c_separator.
+    APPEND gw_text TO gt_text.
+  ENDLOOP.
+  DATA: filename     TYPE string,
+        filetitle    TYPE string,
+        filefullname TYPE string,
+        year         TYPE string,
+        plant        TYPE string.
+
+
+  filename = '\\192.168.155.111\Program\PacknGO\Upload_from_SAP\'.
+
+  CONCATENATE sy-datum sy-uzeit INTO filetitle SEPARATED BY '_'.
+  CONCATENATE filename filetitle '.TXT' INTO filefullname."'&' 'YEAR='
+
+  CALL FUNCTION 'GUI_DOWNLOAD'
+    EXPORTING
+*     BIN_FILESIZE             =
+      filename                 = filefullname
+*     FILETYPE                 = 'ASC'
+*     APPEND                   = ' '
+*     WRITE_FIELD_SEPARATOR    = ' '
+*     HEADER                   = '00'
+*     TRUNC_TRAILING_BLANKS    = ' '
+*     WRITE_LF                 = 'X'
+*     COL_SELECT               = ' '
+*     COL_SELECT_MASK          = ' '
+*     DAT_MODE                 = ' '
+*     CONFIRM_OVERWRITE        = ' '
+*     NO_AUTH_CHECK            = ' '
+*     CODEPAGE                 = ' '
+      ignore_cerr              = abap_true
+*     REPLACEMENT              = '#'
+*     WRITE_BOM                = ' '
+*     TRUNC_TRAILING_BLANKS_EOL       = 'X'
+*     WK1_N_FORMAT             = ' '
+*     WK1_N_SIZE               = ' '
+*     WK1_T_FORMAT             = ' '
+*     WK1_T_SIZE               = ' '
+      write_lf_after_last_line = abap_true
+      show_transfer_status     = abap_true
+*     VIRUS_SCAN_PROFILE       = '/SCET/GUI_DOWNLOAD'
+*      IMPORTING
+*     FILELENGTH               =
+    TABLES
+      data_tab                 = gt_text
+*     FIELDNAMES               =
+    EXCEPTIONS
+      file_write_error         = 1
+      no_batch                 = 2
+      gui_refuse_filetransfer  = 3
+      invalid_type             = 4
+      no_authority             = 5
+      unknown_error            = 6
+      header_not_allowed       = 7
+      separator_not_allowed    = 8
+      filesize_not_allowed     = 9
+      header_too_long          = 10
+      dp_error_create          = 11
+      dp_error_send            = 12
+      dp_error_write           = 13
+      unknown_dp_error         = 14
+      access_denied            = 15
+      dp_out_of_memory         = 16
+      disk_full                = 17
+      dp_timeout               = 18
+      file_not_found           = 19
+      dataprovider_exception   = 20
+      control_flush_error      = 21
+      OTHERS                   = 22.
+
+  IF sy-subrc = 0.
+    lv_message = 'Transaction Success'.
+    MESSAGE lv_message TYPE 'S'.
+    MESSAGE s000(zmm) WITH 'Transaction Success'.
+  ENDIF.
+  IF sy-subrc = 1.
+    lv_message = text15 && ' File Write Error'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 2.
+    lv_message = text15 && ' No Batch'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 3.
+    lv_message = text15 && ' GUI Refuse File Transfer'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 4.
+    lv_message = text15 && ' Invalid Type'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 5.
+    lv_message = text15 && ' No Authority'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 6.
+    lv_message = text15 && ' Unknown Error'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 7.
+    lv_message = text15 && ' Header Not Allowed'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 8.
+    lv_message = text15 && ' Separator Not Allowed'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 9.
+    lv_message = text15 && ' File Size Not Allowed'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 10.
+    lv_message = text15 && ' Header Too Long'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 11.
+    lv_message = text15 && ' DP Error Create'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 12.
+    lv_message = text15 && ' DP Error Send'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 13.
+    lv_message = text15 && ' DP Error Write'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 14.
+    lv_message = text15 && ' DP Unknown Create'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 15.
+    lv_message = text15 && ' Access Denied'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 16.
+    lv_message = text15 && ' DP Out Of Memory'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 17.
+    lv_message = text15 && ' Disk Full'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 18.
+    lv_message = text15 && ' DP Timeout'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 19.
+    lv_message = text15 && ' File Not Found'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 20.
+    lv_message = text15 && ' Data Provider Exception'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 21.
+    lv_message = text15 && ' Control Flush Error'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 22.
+    lv_message = text15 && ' Others'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+
+
+  DATA: filename1  TYPE string,
+        lv_path    TYPE text255,
+        lv_message TYPE string,
+        lv_rc      TYPE c.
+
+  filename1 = 'http://192.168.155.109/packngo/ordersap.php'.   "'http://app.ecosmart.co.id/egarsis/ordersap.php'.  Change URL by PB-FT06 Req By Supervisor Mbk Khalimi 30/11/20
+
+  lv_path = filename1.
+
+  CLEAR: lv_message, lv_rc.
+
+  zmmcl_bc_util=>call_php_script(
+    EXPORTING
+      iv_path    = lv_path    " Text, 255 Characters
+    IMPORTING
+      ev_message = lv_message
+      ev_rc      = lv_rc
+  ).
+
+  IF lv_rc IS NOT INITIAL.
+    lv_message = `Failed to call PHP script ` && lv_path.
+    MESSAGE lv_message TYPE 'E'.
+  ELSE.
+    lv_message = `Successfully call PHP script ` && lv_path.
+    MESSAGE lv_message TYPE 'S'.
+    MESSAGE s000(zmm) WITH 'Data has been transfered to sharing folder'.
+  ENDIF.
+
+ENDFORM.
+
+
+  FORM scmodify.
+    LOOP AT SCREEN.
+  IF screen-group1 = 'SC1' AND p_rad5 EQ 'X'.
+    screen-active = '0'.
+    MODIFY SCREEN.
+    CONTINUE.
+  ELSEIF screen-group1 = 'SC2' AND p_rad5 NE 'X'.
+    screen-active = '0'.
+    MODIFY SCREEN.
+    CONTINUE.
+  ENDIF.
+ENDLOOP.
+
+
+    ENDFORM.
+
+FORM display_datainv.
+  PERFORM fill_fieldcat3.
+*  elseif S_WERKS = 'AG02'.
+*  PERFORM FILL_FIELDCAT2.
+  gw_layout-zebra = 'X'.
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program = sy-repid
+      is_layout          = gw_layout
+      it_fieldcat        = gt_cat
+      i_default          = ''
+      i_save             = 'X'
+    TABLES
+      t_outtab           = it_report_inv
+    EXCEPTIONS
+      program_error      = 1
+      OTHERS             = 2.
+  IF sy-subrc <> 0.
+  ENDIF.
+
+
+  ENDFORM.
+
+ FORM fill_fieldcat3.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'INVOICE_NO'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 18.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Invoice No'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'INVOICE_DATE'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Invoice Date'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ETD'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'ETD'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'SHIPBY'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Shipment By'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'INCO2'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Port of Loading'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'ETA'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'ETA'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'VSSL'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Vessel Name'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'VYG'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Voyage'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BCTYPE'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 5.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'BC Doc'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BCDOC'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 5.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'BC Type'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BCDAFT'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'No Daftar  BC'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BCDATE'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 10.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'BC Date'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BCAJU'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 15.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'No Aju'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'BEZEI'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 30.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Rute'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'SHIPMODE'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 5.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Ship Mode'.
+  APPEND gw_cat TO gt_cat.
+
+  CLEAR: gw_cat.
+  gw_cat-fieldname = 'SHIPTO'.
+  gw_cat-tabname = 'IT_REPORT_INV'.
+  gw_cat-outputlen = 20.
+  gw_cat-seltext_l = gw_cat-seltext_m = 'Ship To(Country)'.
+  APPEND gw_cat TO gt_cat.
+
+   ENDFORM.
+
+
+FORM send_inv.
+  DATA : inv         TYPE string.
+  DATA: filename     TYPE string,
+        filetitle    TYPE string,
+        filefullname TYPE string,
+        year         TYPE string,
+        plant        TYPE string,
+        lv_message   TYPE c LENGTH 72.
+
+
+   LOOP AT it_report_inv.
+
+     inv = it_report_inv-invoice_no.
+     CONCATENATE 'Please Check BC data for ' inv INTO lv_message SEPARATED BY ' '.
+
+     IF it_report_inv-bctype EQ ' '
+       OR it_report_inv-bcdate EQ ' '
+       OR it_report_inv-bcdaft EQ ' '
+       OR it_report_inv-bcaju EQ ' '.
+       MESSAGE lv_message TYPE 'I'.
+     EXIT.
+     ENDIF.
+
+     CONCATENATE
+     it_report_inv-invoice_no
+     it_report_inv-invoice_date
+     it_report_inv-etd
+     it_report_inv-shipby
+     it_report_inv-inco2
+     it_report_inv-eta
+     it_report_inv-vssl
+     it_report_inv-vyg
+     it_report_inv-bctype
+     it_report_inv-bcdoc
+     it_report_inv-bcdaft
+     it_report_inv-bcdate
+     it_report_inv-bcaju
+     it_report_inv-bezei
+     it_report_inv-shipmode
+     it_report_inv-shipto
+         INTO gw_text
+    SEPARATED BY c_separator.
+    APPEND gw_text TO gt_text.
+*  ENDLOOP.
+*  DATA: filename     TYPE string,
+*        filetitle    TYPE string,
+*        filefullname TYPE string,
+*        year         TYPE string,
+*        plant        TYPE string.
+
+
+  REPLACE ALL OCCURRENCES OF REGEX '/' IN inv WITH '-' .
+  filename ='\\192.168.155.111\Program\PacknGO\Invoice_from_SAP\' ."'C:\Users\Administrator\Desktop\PNG\' .
+
+  CONCATENATE inv sy-datum sy-uzeit INTO filetitle SEPARATED BY '_'.
+  CONCATENATE filename filetitle '.TXT' INTO filefullname."'&' 'YEAR='
+
+  CALL FUNCTION 'GUI_DOWNLOAD'
+    EXPORTING
+*     BIN_FILESIZE             =
+      filename                 = filefullname
+*     FILETYPE                 = 'ASC'
+*     APPEND                   = ' '
+*     WRITE_FIELD_SEPARATOR    = ' '
+*     HEADER                   = '00'
+*     TRUNC_TRAILING_BLANKS    = ' '
+*     WRITE_LF                 = 'X'
+*     COL_SELECT               = ' '
+*     COL_SELECT_MASK          = ' '
+*     DAT_MODE                 = ' '
+*     CONFIRM_OVERWRITE        = ' '
+*     NO_AUTH_CHECK            = ' '
+*     CODEPAGE                 = ' '
+      ignore_cerr              = abap_true
+*     REPLACEMENT              = '#'
+*     WRITE_BOM                = ' '
+*     TRUNC_TRAILING_BLANKS_EOL       = 'X'
+*     WK1_N_FORMAT             = ' '
+*     WK1_N_SIZE               = ' '
+*     WK1_T_FORMAT             = ' '
+*     WK1_T_SIZE               = ' '
+      write_lf_after_last_line = abap_true
+      show_transfer_status     = abap_true
+*     VIRUS_SCAN_PROFILE       = '/SCET/GUI_DOWNLOAD'
+*      IMPORTING
+*     FILELENGTH               =
+    TABLES
+      data_tab                 = gt_text
+*     FIELDNAMES               =
+    EXCEPTIONS
+      file_write_error         = 1
+      no_batch                 = 2
+      gui_refuse_filetransfer  = 3
+      invalid_type             = 4
+      no_authority             = 5
+      unknown_error            = 6
+      header_not_allowed       = 7
+      separator_not_allowed    = 8
+      filesize_not_allowed     = 9
+      header_too_long          = 10
+      dp_error_create          = 11
+      dp_error_send            = 12
+      dp_error_write           = 13
+      unknown_dp_error         = 14
+      access_denied            = 15
+      dp_out_of_memory         = 16
+      disk_full                = 17
+      dp_timeout               = 18
+      file_not_found           = 19
+      dataprovider_exception   = 20
+      control_flush_error      = 21
+      OTHERS                   = 22.
+
+  IF sy-subrc = 0.
+    lv_message = 'Transaction Success'.
+    MESSAGE lv_message TYPE 'S'.
+    MESSAGE s000(zmm) WITH 'Transaction Success'.
+  ENDIF.
+  IF sy-subrc = 1.
+    lv_message = text15 && ' File Write Error'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 2.
+    lv_message = text15 && ' No Batch'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 3.
+    lv_message = text15 && ' GUI Refuse File Transfer'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 4.
+    lv_message = text15 && ' Invalid Type'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 5.
+    lv_message = text15 && ' No Authority'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 6.
+    lv_message = text15 && ' Unknown Error'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 7.
+    lv_message = text15 && ' Header Not Allowed'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 8.
+    lv_message = text15 && ' Separator Not Allowed'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 9.
+    lv_message = text15 && ' File Size Not Allowed'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 10.
+    lv_message = text15 && ' Header Too Long'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 11.
+    lv_message = text15 && ' DP Error Create'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 12.
+    lv_message = text15 && ' DP Error Send'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 13.
+    lv_message = text15 && ' DP Error Write'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 14.
+    lv_message = text15 && ' DP Unknown Create'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 15.
+    lv_message = text15 && ' Access Denied'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 16.
+    lv_message = text15 && ' DP Out Of Memory'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 17.
+    lv_message = text15 && ' Disk Full'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 18.
+    lv_message = text15 && ' DP Timeout'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 19.
+    lv_message = text15 && ' File Not Found'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 20.
+    lv_message = text15 && ' Data Provider Exception'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 21.
+    lv_message = text15 && ' Control Flush Error'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+  IF sy-subrc = 22.
+    lv_message = text15 && ' Others'.
+    MESSAGE lv_message TYPE 'I'.
+  ENDIF.
+
+CLEAR  gw_text.
+REFRESH gt_text.
+*ENDLOOP.
+
+  DATA: filename1   TYPE string,
+        lv_path     TYPE text255,
+        lv_message2 TYPE string,
+        lv_rc       TYPE c.
+
+  filename1 = 'http://app.ecosmart.co.id/packngo/getinvoicesap.php'.   "'http://app.ecosmart.co.id/egarsis/ordersap.php'.
+
+  lv_path = filename1.
+
+  CLEAR: lv_message2, lv_rc.
+
+  zmmcl_bc_util=>call_php_script(
+    EXPORTING
+      iv_path    = lv_path    " Text, 255 Characters
+    IMPORTING
+      ev_message = lv_message2
+      ev_rc      = lv_rc
+  ).
+
+  IF lv_rc IS NOT INITIAL.
+    lv_message2 = `Failed to call PHP script ` && lv_path.
+    MESSAGE lv_message2 TYPE 'E'.
+  ELSE.
+    lv_message2 = `Successfully call PHP script ` && lv_path.
+    MESSAGE lv_message2 TYPE 'S'.
+    MESSAGE s000(zmm) WITH 'Data has been transfered to sharing folder'.
+  ENDIF.
+ENDLOOP.
+
+
+ ENDFORM.
