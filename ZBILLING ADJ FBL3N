@@ -1,0 +1,55 @@
+*&---------------------------------------------------------------------*
+*& Report ZSDR_BILLING
+*& Functional : Irwan R- --------------------------------------------------------------------*
+*& Abaper : Irwan R ---------------------------------------------------------------------*
+*& Requested By : Noni / Eka Finance DPM---------------------------------------------------------------------*
+*& Date : 14/09/2022 ---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+
+*&---------------------------------------------------------------------*
+
+INCLUDE zsdr_billing_top.
+INCLUDE zsdr_billing_f01.
+INCLUDE zsdr_billing_f02. "Accounting Data Processing
+
+
+AT SELECTION-SCREEN OUTPUT.
+  PERFORM f_initial_screen.
+  IF rb_bill EQ 'X'.
+    REFRESH s_saknr.
+    REFRESH s_belnr.
+    REFRESH s_budat.
+  ELSE.
+    REFRESH s_vtweg.
+    REFRESH s_vbeln.
+    REFRESH s_spart.
+    REFRESH s_sfakn.
+    REFRESH s_kunag.
+    REFRESH s_bstnk.
+    REFRESH s_kunrg.
+    REFRESH s_matnr.
+    REFRESH s_fkdat.
+    REFRESH s_fbuda.
+    REFRESH s_bldat.
+    REFRESH s_vgbel.
+    REFRESH s_fkart.
+    REFRESH s_aubel.
+    REFRESH s_rfbsk.
+  ENDIF.
+
+
+
+
+START-OF-SELECTION.
+  IF rb_bill EQ 'X'.
+    PERFORM f_getdata.
+  ELSE.
+    PERFORM f_getdata2. "Accounting doc
+  ENDIF.
+  PERFORM f_data_processing.
+  IF it_data[] IS NOT INITIAL.
+    PERFORM f_head.
+    PERFORM f_display.
+  ELSE.
+    MESSAGE 'Data Tidak Ditemukan....' TYPE 'I' .
+  ENDIF.
